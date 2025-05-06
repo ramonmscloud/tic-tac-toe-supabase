@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -267,7 +267,6 @@
                 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqeGhwcHVvYnZqdXlwc3hxaGFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0MzcxNzIsImV4cCI6MjA2MjAxMzE3Mn0.Rk1xe9CCyDccS4ueN-AI6Glv05xSK7hS2LXtxclLXtU'; // <-- PON TU ANON KEY AQUÍ
                 // 
 
-
                 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('TU_') || supabaseKey.includes('TU_')) {
                      console.warn("Supabase URL o Key no configuradas.");
                      displayAuthMessage("Configuración de Supabase incompleta. Revisa la consola.", true);
@@ -466,43 +465,49 @@
         function mapSupabaseToLocalState(supabaseData) { /* ... sin cambios ... */ }
 
         function processGameStateUpdate(updatedData) {
-            console.log(`processGameStateUpdate: Recibidos datos:`, JSON.parse(JSON.stringify(updatedData))); // DEBUG
-            gameState = mapSupabaseToLocalState(updatedData);
-            console.log(`processGameStateUpdate: Estado local actualizado:`, JSON.parse(JSON.stringify(gameState))); // DEBUG
-            console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}`); // DEBUG
+            try { // *** Añadir try...catch aquí ***
+                console.log(`processGameStateUpdate: Recibidos datos:`, JSON.stringify(updatedData)); // DEBUG - Usar stringify para ver todo
+                gameState = mapSupabaseToLocalState(updatedData);
+                // Log cambiado para evitar error:
+                console.log(`processGameStateUpdate: Estado local actualizado (stringified):`, JSON.stringify(gameState)); // DEBUG - Usar stringify
+                console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}`); // DEBUG
 
-            const P0_DataExists = gameState.players && gameState.players[0] && gameState.players[0].id;
-            const P1_DataExists = gameState.players && gameState.players[1] && gameState.players[1].id;
-            console.log(`processGameStateUpdate: P0_DataExists: ${P0_DataExists}, P1_DataExists: ${P1_DataExists}`); // DEBUG
+                const P0_DataExists = gameState.players && gameState.players[0] && gameState.players[0].id;
+                const P1_DataExists = gameState.players && gameState.players[1] && gameState.players[1].id;
+                console.log(`processGameStateUpdate: P0_DataExists: ${P0_DataExists}, P1_DataExists: ${P1_DataExists}`); // DEBUG
 
-            if (gameSection.classList.contains('hidden')) {
-                console.log("processGameStateUpdate: Sección de juego oculta. Comprobando condiciones para mostrar."); // DEBUG
-                if ((localPlayerIndex === 0 && P0_DataExists) || (localPlayerIndex === 1 && P0_DataExists && P1_DataExists)) {
-                    console.log("processGameStateUpdate: Condiciones cumplidas, llamando a showGameScreen()."); // DEBUG
-                    showGameScreen();
-                } else {
-                    console.log("processGameStateUpdate: Condiciones para mostrar pantalla de juego NO cumplidas."); // DEBUG
-                    if(localPlayerIndex === 0 && P0_DataExists && !P1_DataExists) {
-                         networkStatus.textContent = `Esperando al Jugador 2... ID: ${currentGameId}`;
+                if (gameSection.classList.contains('hidden')) {
+                    console.log("processGameStateUpdate: Sección de juego oculta. Comprobando condiciones para mostrar."); // DEBUG
+                    if ((localPlayerIndex === 0 && P0_DataExists) || (localPlayerIndex === 1 && P0_DataExists && P1_DataExists)) {
+                        console.log("processGameStateUpdate: Condiciones cumplidas, llamando a showGameScreen()."); // DEBUG
+                        showGameScreen();
                     } else {
-                         networkStatus.textContent = "Sincronizando partida...";
+                        console.log("processGameStateUpdate: Condiciones para mostrar pantalla de juego NO cumplidas."); // DEBUG
+                        if(localPlayerIndex === 0 && P0_DataExists && !P1_DataExists) {
+                             networkStatus.textContent = `Esperando al Jugador 2... ID: ${currentGameId}`;
+                        } else {
+                             networkStatus.textContent = "Sincronizando partida...";
+                        }
                     }
+                } else {
+                    console.log("processGameStateUpdate: Sección de juego visible. Actualizando elementos UI."); // DEBUG
+                    renderBoard();
+                    updatePlayerInfo();
+                    updatePlayerTurnDisplay();
+                    updateGameStatus();
                 }
-            } else {
-                console.log("processGameStateUpdate: Sección de juego visible. Actualizando elementos UI."); // DEBUG
-                renderBoard();
-                updatePlayerInfo();
-                updatePlayerTurnDisplay();
-                updateGameStatus();
-            }
 
-            if (!gameSection.classList.contains('hidden')) {
-                 if (P0_DataExists && P1_DataExists && !gameState.isGameOver) {
-                    networkStatus.textContent = "¡Partida en curso!";
-                 } else if (gameState.isGameOver) {
-                    networkStatus.textContent = "Partida finalizada.";
+                if (!gameSection.classList.contains('hidden')) {
+                     if (P0_DataExists && P1_DataExists && !gameState.isGameOver) {
+                        networkStatus.textContent = "¡Partida en curso!";
+                     } else if (gameState.isGameOver) {
+                        networkStatus.textContent = "Partida finalizada.";
+                     }
                  }
-             }
+            } catch (error) { // *** Capturar error dentro de processGameStateUpdate ***
+                 console.error("Error DENTRO de processGameStateUpdate:", error); // DEBUG
+                 networkStatus.textContent = "Error al procesar datos de la partida.";
+            }
         }
 
         function listenToGameUpdates(gameId) {
@@ -544,7 +549,6 @@
                             const { data: initialData, error: initialError } = await supabase
                                 .from(SUPABASE_TABLE_NAME).select('*').eq('id', gameId).single();
 
-                            // *** LOG AÑADIDO ***
                             console.log("listenToGameUpdates: Raw initialData received after subscribe:", JSON.stringify(initialData)); // DEBUG
 
                             if (initialError) {
