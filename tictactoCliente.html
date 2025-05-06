@@ -333,11 +333,9 @@
 
         // --- Funciones de Red ---
         async function fetchAndDisplayOpenGames() {
-            // *** DEBUGGING LOGS START ***
             console.log("fetchAndDisplayOpenGames: Function called.");
             console.log("fetchAndDisplayOpenGames: supabase initialized?", !!supabase);
             console.log("fetchAndDisplayOpenGames: localPlayerProfile:", localPlayerProfile);
-            // *** DEBUGGING LOGS END ***
 
             if (!supabase || !localPlayerProfile) {
                 console.warn("fetchAndDisplayOpenGames: Supabase no listo o perfil local no disponible.");
@@ -365,6 +363,10 @@
                     noOpenGamesMessageP.textContent = "Error al cargar la lista de partidas.";
                     throw error;
                 }
+
+                // *** LOG AÑADIDO ***
+                console.log("fetchAndDisplayOpenGames: Raw data received from Supabase:", JSON.stringify(openGames));
+                // *** FIN LOG AÑADIDO ***
 
                 openGamesListDiv.innerHTML = '';
 
@@ -466,40 +468,38 @@
         function mapSupabaseToLocalState(supabaseData) { /* ... sin cambios ... */ }
 
         function processGameStateUpdate(updatedData) {
-            // *** DEBUGGING LOGS START ***
-            console.log(`processGameStateUpdate: Recibidos datos:`, JSON.parse(JSON.stringify(updatedData)));
+            console.log(`processGameStateUpdate: Recibidos datos:`, JSON.parse(JSON.stringify(updatedData))); // DEBUG
             gameState = mapSupabaseToLocalState(updatedData);
-            console.log(`processGameStateUpdate: Estado local actualizado:`, JSON.parse(JSON.stringify(gameState)));
-            console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}`);
-            // *** DEBUGGING LOGS END ***
+            console.log(`processGameStateUpdate: Estado local actualizado:`, JSON.parse(JSON.stringify(gameState))); // DEBUG
+            console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}`); // DEBUG
 
             const P0_DataExists = gameState.players && gameState.players[0] && gameState.players[0].id;
             const P1_DataExists = gameState.players && gameState.players[1] && gameState.players[1].id;
-            console.log(`processGameStateUpdate: P0_DataExists: ${P0_DataExists}, P1_DataExists: ${P1_DataExists}`);
+            console.log(`processGameStateUpdate: P0_DataExists: ${P0_DataExists}, P1_DataExists: ${P1_DataExists}`); // DEBUG
 
             if (gameSection.classList.contains('hidden')) {
-                console.log("processGameStateUpdate: Sección de juego oculta. Comprobando condiciones para mostrar.");
+                console.log("processGameStateUpdate: Sección de juego oculta. Comprobando condiciones para mostrar."); // DEBUG
                 // Condición para mostrar: soy jugador 0 Y mis datos existen, O soy jugador 1 Y AMBOS datos existen
                 if ((localPlayerIndex === 0 && P0_DataExists) || (localPlayerIndex === 1 && P0_DataExists && P1_DataExists)) {
-                    console.log("processGameStateUpdate: Condiciones cumplidas, llamando a showGameScreen().");
+                    console.log("processGameStateUpdate: Condiciones cumplidas, llamando a showGameScreen()."); // DEBUG
                     showGameScreen(); // <--- PUNTO CLAVE
                 } else {
-                    console.log("processGameStateUpdate: Condiciones para mostrar pantalla de juego NO cumplidas.");
+                    console.log("processGameStateUpdate: Condiciones para mostrar pantalla de juego NO cumplidas."); // DEBUG
                     if(localPlayerIndex === 0 && P0_DataExists && !P1_DataExists) {
                          networkStatus.textContent = `Esperando al Jugador 2... ID: ${currentGameId}`;
                     } else {
-                         networkStatus.textContent = "Sincronizando partida..."; // Mensaje genérico si algo falta
+                         networkStatus.textContent = "Sincronizando partida...";
                     }
                 }
             } else {
-                console.log("processGameStateUpdate: Sección de juego visible. Actualizando elementos UI.");
+                console.log("processGameStateUpdate: Sección de juego visible. Actualizando elementos UI."); // DEBUG
                 renderBoard();
                 updatePlayerInfo();
                 updatePlayerTurnDisplay();
                 updateGameStatus();
             }
 
-            // Actualizar mensaje de estado de red (similar a lo anterior, pero puede ser redundante si la pantalla de juego ya está visible)
+            // Actualizar mensaje de estado de red (puede ser redundante si la pantalla de juego ya está visible)
             if (!gameSection.classList.contains('hidden')) {
                  if (P0_DataExists && P1_DataExists && !gameState.isGameOver) {
                     networkStatus.textContent = "¡Partida en curso!";
@@ -511,10 +511,10 @@
 
         function listenToGameUpdates(gameId) {
             if (!supabase || !gameId) { console.error("listenToGameUpdates: Supabase no inicializado o gameId no proporcionado."); return; }
-            console.log(`listenToGameUpdates: Configurando listener para gameId: ${gameId}`);
+            console.log(`listenToGameUpdates: Configurando listener para gameId: ${gameId}`); // DEBUG
 
             if (realtimeChannel) {
-                console.log("listenToGameUpdates: Removiendo canal Realtime existente...");
+                console.log("listenToGameUpdates: Removiendo canal Realtime existente..."); // DEBUG
                 supabase.removeChannel(realtimeChannel)
                     .then(status => console.log("listenToGameUpdates: Canal Realtime anterior removido, estado:", status))
                     .catch(error => console.error("listenToGameUpdates: Error al remover canal Realtime previo:", error));
@@ -527,49 +527,49 @@
                     'postgres_changes',
                     { event: '*', schema: 'public', table: SUPABASE_TABLE_NAME, filter: `id=eq.${gameId}` },
                     (payload) => {
-                        console.log('listenToGameUpdates: Cambio recibido de Supabase:', payload);
+                        console.log('listenToGameUpdates: Cambio recibido de Supabase:', payload); // DEBUG
                         if (payload.eventType === 'DELETE') {
                             alert("La partida ha sido eliminada o ha terminado.");
-                            console.warn(`listenToGameUpdates: Partida ${gameId} eliminada.`);
+                            console.warn(`listenToGameUpdates: Partida ${gameId} eliminada.`); // DEBUG
                             leaveGame(); return;
                         }
                         const updatedGameData = payload.new;
-                        if (!updatedGameData) { console.warn("listenToGameUpdates: Payload de Supabase no contiene datos 'new'. Payload:", payload); return; }
-                        console.log("listenToGameUpdates: Datos actualizados del payload:", updatedGameData);
+                        if (!updatedGameData) { console.warn("listenToGameUpdates: Payload de Supabase no contiene datos 'new'. Payload:", payload); return; } // DEBUG
+                        console.log("listenToGameUpdates: Datos actualizados del payload:", updatedGameData); // DEBUG
                         processGameStateUpdate(updatedGameData); // <--- LLAMADA CLAVE
                     }
                 )
                 .subscribe(async (status, err) => {
                     if (status === 'SUBSCRIBED') {
-                        console.log(`listenToGameUpdates: Suscrito a cambios en la partida ${gameId}`);
+                        console.log(`listenToGameUpdates: Suscrito a cambios en la partida ${gameId}`); // DEBUG
                         networkStatus.textContent = "Conectado a la partida. Cargando estado...";
                         try {
-                            console.log(`listenToGameUpdates: Cargando estado inicial para ${gameId} tras suscripción.`);
+                            console.log(`listenToGameUpdates: Cargando estado inicial para ${gameId} tras suscripción.`); // DEBUG
                             const { data: initialData, error: initialError } = await supabase
                                 .from(SUPABASE_TABLE_NAME).select('*').eq('id', gameId).single();
 
                             if (initialError) {
-                                console.error("listenToGameUpdates: Error cargando estado inicial:", initialError);
+                                console.error("listenToGameUpdates: Error cargando estado inicial:", initialError); // DEBUG
                                 if (initialError.code === 'PGRST116') {
                                      networkStatus.textContent = "La partida no existe o fue eliminada."; leaveGame();
                                 } else { networkStatus.textContent = "Error al cargar la partida."; }
                                 return;
                             }
                             if (initialData) {
-                                console.log("listenToGameUpdates: Estado inicial cargado:", initialData);
+                                console.log("listenToGameUpdates: Estado inicial cargado:", initialData); // DEBUG
                                 processGameStateUpdate(initialData); // <--- LLAMADA CLAVE CON DATOS INICIALES
                             } else {
-                                console.warn(`listenToGameUpdates: No se encontró estado inicial para ${gameId}.`);
+                                console.warn(`listenToGameUpdates: No se encontró estado inicial para ${gameId}.`); // DEBUG
                                 networkStatus.textContent = "La partida no se encontró. Pudo haber sido eliminada."; leaveGame();
                             }
                         } catch (e) {
-                            console.error("listenToGameUpdates: Error crítico en carga inicial:", e);
+                            console.error("listenToGameUpdates: Error crítico en carga inicial:", e); // DEBUG
                             networkStatus.textContent = "Error crítico al cargar datos.";
                         }
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        console.error(`listenToGameUpdates: Error en canal Realtime (${status}):`, err);
+                        console.error(`listenToGameUpdates: Error en canal Realtime (${status}):`, err); // DEBUG
                         networkStatus.textContent = `Error de conexión Realtime (${status}). Intenta recargar.`;
-                    } else { console.log(`listenToGameUpdates: Estado del canal Realtime: ${status}`); }
+                    } else { console.log(`listenToGameUpdates: Estado del canal Realtime: ${status}`); } // DEBUG
                 });
         }
 
@@ -579,9 +579,7 @@
         function resetLocalGameState() { /* ... sin cambios ... */ }
 
         function showGameScreen() {
-             // *** DEBUGGING LOG START ***
-             console.log("showGameScreen: Function called.");
-             // *** DEBUGGING LOG END ***
+             console.log("showGameScreen: Function called."); // DEBUG
              authSection.classList.add('hidden'); networkSection.classList.add('hidden'); gameSection.classList.remove('hidden');
              if (cells.length === 0) {
                  cells = Array.from(boardElement.querySelectorAll('.cell'));
