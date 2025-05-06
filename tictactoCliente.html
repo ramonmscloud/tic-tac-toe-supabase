@@ -230,11 +230,9 @@
         const statusMessageContainer = document.getElementById('status-message-container');
         let statusMessage = document.getElementById('status-message');
         const resetButton = document.getElementById('reset-button');
-        // Nuevos elementos para la lista de partidas
         const openGamesListDiv = document.getElementById('open-games-list');
         const noOpenGamesMessageP = document.getElementById('no-open-games-message');
         const refreshGamesButton = document.getElementById('refresh-games-button');
-
 
         // --- Constantes ---
         const DEFAULT_IMAGE_URL = 'https://placehold.co/60x60/cccccc/ffffff?text=?';
@@ -268,6 +266,7 @@
                 const supabaseUrl = 'https://gjxhppuobvjuypsxqhah.supabase.co'; // <-- PON TU URL AQUÍ
                 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqeGhwcHVvYnZqdXlwc3hxaGFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0MzcxNzIsImV4cCI6MjA2MjAxMzE3Mn0.Rk1xe9CCyDccS4ueN-AI6Glv05xSK7hS2LXtxclLXtU'; // <-- PON TU ANON KEY AQUÍ
                 // 
+
 
                 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('TU_') || supabaseKey.includes('TU_')) {
                      console.warn("Supabase URL o Key no configuradas.");
@@ -308,14 +307,14 @@
                 userEmailDisplay.textContent = user.email;
                 networkSection.classList.remove('hidden');
                 createGameButton.disabled = false;
-                joinGameWithIdButton.disabled = false; // Habilitar botón de unirse con ID
+                joinGameWithIdButton.disabled = false;
                 const placeholderColor = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
                 const placeholderText = user.email.charAt(0).toUpperCase();
                 localPlayerProfile = {
                     id: user.id, name: user.email,
                     imageUrl: `https://placehold.co/60x60/${placeholderColor}/ffffff?text=${placeholderText}`
                 };
-                fetchAndDisplayOpenGames(); // Cargar partidas abiertas al loguearse
+                fetchAndDisplayOpenGames();
             } else {
                 authSection.classList.remove('hidden');
                 signinForm.classList.remove('hidden');
@@ -325,7 +324,7 @@
                 networkSection.classList.add('hidden');
                 gameSection.classList.add('hidden');
                 createGameButton.disabled = true;
-                joinGameWithIdButton.disabled = true; // Deshabilitar botón de unirse con ID
+                joinGameWithIdButton.disabled = true;
                 localPlayerProfile = null;
                 if (realtimeChannel) leaveGame();
             }
@@ -337,26 +336,22 @@
             if (!supabase || !localPlayerProfile) {
                 console.warn("fetchAndDisplayOpenGames: Supabase no listo o perfil local no disponible.");
                 noOpenGamesMessageP.textContent = "Error al cargar partidas (no conectado).";
-                openGamesListDiv.innerHTML = ''; // Limpiar por si acaso
+                openGamesListDiv.innerHTML = '';
                 openGamesListDiv.appendChild(noOpenGamesMessageP);
                 return;
             }
             console.log("fetchAndDisplayOpenGames: Buscando partidas abiertas...");
             noOpenGamesMessageP.textContent = "Buscando partidas...";
-            openGamesListDiv.innerHTML = ''; // Limpiar lista anterior
-            openGamesListDiv.appendChild(noOpenGamesMessageP); // Mostrar mensaje de carga
+            openGamesListDiv.innerHTML = '';
+            openGamesListDiv.appendChild(noOpenGamesMessageP);
 
             try {
-                // La consulta busca partidas donde:
-                // 1. El segundo jugador es null (players->1 es null)
-                // 2. El juego no ha terminado (is_game_over es false)
-                // 3. El creador (players->0->>'id') no es el usuario actual
                 const { data: openGames, error } = await supabase
                     .from(SUPABASE_TABLE_NAME)
                     .select('id, players, created_at')
-                    .is('players->1', null) // El segundo elemento del array JSONB 'players' es null
+                    .is('players->1', null)
                     .eq('is_game_over', false)
-                    .not('players->0->>id', 'eq', localPlayerProfile.id) // No mostrar mis propias partidas
+                    .not('players->0->>id', 'eq', localPlayerProfile.id)
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -365,30 +360,26 @@
                     throw error;
                 }
 
-                openGamesListDiv.innerHTML = ''; // Limpiar mensaje de "buscando"
+                openGamesListDiv.innerHTML = '';
 
                 if (openGames && openGames.length > 0) {
                     console.log("fetchAndDisplayOpenGames: Partidas encontradas:", openGames);
                     openGames.forEach(game => {
                         const gameItem = document.createElement('div');
                         gameItem.classList.add('game-list-item');
-
                         const gameInfo = document.createElement('div');
                         const creatorNameP = document.createElement('p');
                         creatorNameP.classList.add('creator-name');
                         creatorNameP.textContent = `Creada por: ${game.players[0]?.name || 'Desconocido'}`;
                         const gameIdP = document.createElement('p');
                         gameIdP.classList.add('game-id-short');
-                        gameIdP.textContent = `ID: ${game.id.substring(0, 8)}...`; // Mostrar ID corto
-
+                        gameIdP.textContent = `ID: ${game.id.substring(0, 8)}...`;
                         gameInfo.appendChild(creatorNameP);
                         gameInfo.appendChild(gameIdP);
-
                         const joinButton = document.createElement('button');
                         joinButton.textContent = 'Unirse';
                         joinButton.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white', 'font-bold', 'py-1', 'px-3', 'rounded-md', 'text-xs', 'sm:text-sm');
-                        joinButton.onclick = () => joinGame(game.id); // Llamar a joinGame con el ID
-
+                        joinButton.onclick = () => joinGame(game.id);
                         gameItem.appendChild(gameInfo);
                         gameItem.appendChild(joinButton);
                         openGamesListDiv.appendChild(gameItem);
@@ -401,7 +392,7 @@
 
             } catch (error) {
                 console.error("fetchAndDisplayOpenGames: Excepción al obtener partidas:", error);
-                if (openGamesListDiv.innerHTML === '' || openGamesListDiv.contains(noOpenGamesMessageP)) { // Solo si no se han añadido items
+                if (openGamesListDiv.innerHTML === '' || openGamesListDiv.contains(noOpenGamesMessageP)) {
                     noOpenGamesMessageP.textContent = "Error al cargar la lista de partidas.";
                     openGamesListDiv.innerHTML = '';
                     openGamesListDiv.appendChild(noOpenGamesMessageP);
@@ -410,7 +401,65 @@
         }
 
 
-        async function createGame() { /* ... sin cambios ... */ }
+        async function createGame() {
+            // *** DEBUGGING LOGS START ***
+            console.log("createGame: Function called.");
+            console.log("createGame: currentUser:", currentUser);
+            console.log("createGame: localPlayerProfile:", localPlayerProfile);
+            console.log("createGame: supabase initialized?", !!supabase);
+            // *** DEBUGGING LOGS END ***
+
+            if (!localPlayerProfile || !supabase) {
+                networkStatus.textContent = !localPlayerProfile ? "Debes iniciar sesión primero." : "Error de conexión.";
+                // Add more specific logs here too
+                if (!localPlayerProfile) console.error("createGame: Aborted - localPlayerProfile is null or undefined.");
+                if (!supabase) console.error("createGame: Aborted - supabase client is null or undefined.");
+                return;
+            }
+
+            networkStatus.textContent = "Creando partida...";
+            createGameButton.disabled = true;
+            joinGameWithIdButton.disabled = true; // Disable join button too
+            refreshGamesButton.disabled = true; // Disable refresh button
+
+            try {
+                const initialGameStateForSupabase = {
+                    board: ['', '', '', '', '', '', '', '', ''], current_player_index: 0,
+                    players: [localPlayerProfile, null], is_game_over: false,
+                    winner_index: -1, winning_combination: null
+                };
+                console.log("createGame: Estado inicial para Supabase:", initialGameStateForSupabase); // DEBUG
+
+                const { data, error } = await supabase.from(SUPABASE_TABLE_NAME)
+                    .insert([initialGameStateForSupabase]).select().single();
+
+                if (error) {
+                    console.error("createGame: Error al insertar en Supabase:", error); // DEBUG
+                    throw error;
+                }
+                if (!data || !data.id) {
+                    console.error("createGame: No se recibieron datos o ID de Supabase después de la inserción."); // DEBUG
+                    throw new Error("No se pudo obtener el ID de la partida creada desde Supabase.");
+                }
+                console.log("createGame: Partida creada en Supabase, datos recibidos:", data); // DEBUG
+
+                currentGameId = data.id;
+                localPlayerIndex = 0;
+                // gameState se actualizará a través del listener de Realtime o la carga inicial en subscribe
+                networkStatus.textContent = `Partida creada! ID: ${currentGameId}. Esperando oponente...`;
+                gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`;
+                console.log(`createGame: ID de Partida: ${currentGameId}. Llamando a listenToGameUpdates.`); // DEBUG
+                listenToGameUpdates(currentGameId);
+
+            } catch (error) {
+                console.error("createGame: Catch general - Error al crear la partida:", error); // DEBUG
+                networkStatus.textContent = `Error al crear la partida: ${error.message}. Revisa la consola.`;
+                // Re-enable buttons on error
+                createGameButton.disabled = false;
+                joinGameWithIdButton.disabled = false;
+                refreshGamesButton.disabled = false;
+            }
+        }
 
         async function joinGame(gameIdFromList = null) { // Acepta un ID de la lista
             const gameIdToJoin = gameIdFromList || joinGameIdInput.value.trim(); // Usar ID de lista o del input
@@ -426,6 +475,7 @@
             networkStatus.textContent = `Uniéndose a la partida ${gameIdToJoin}...`;
             createGameButton.disabled = true;
             joinGameWithIdButton.disabled = true; // Deshabilitar ambos botones de unirse
+            refreshGamesButton.disabled = true; // Disable refresh button
             if (gameIdFromList) { // Si viene de la lista, el input puede estar vacío
                 joinGameIdInput.disabled = true;
             }
@@ -439,19 +489,19 @@
 
                 if (!gameData) {
                     networkStatus.textContent = "Partida no encontrada.";
-                    createGameButton.disabled = false; joinGameWithIdButton.disabled = false; joinGameIdInput.disabled = false; return;
+                    throw new Error("Partida no encontrada."); // Throw error to re-enable buttons in finally
                 }
                 console.log("joinGame: Partida encontrada:", gameData);
 
                 if (gameData.players && gameData.players[1] !== null && gameData.players[1].id !== localPlayerProfile.id) {
                     networkStatus.textContent = "La partida ya está llena.";
-                    createGameButton.disabled = false; joinGameWithIdButton.disabled = false; joinGameIdInput.disabled = false; return;
+                     throw new Error("Partida llena."); // Throw error to re-enable buttons in finally
                 }
                 if (gameData.players && ((gameData.players[0] && gameData.players[0].id === localPlayerProfile.id) || (gameData.players[1] && gameData.players[1].id === localPlayerProfile.id))) {
                     console.log("joinGame: El jugador ya está en esta partida. Re-uniendo...");
                     currentGameId = gameIdToJoin;
                     localPlayerIndex = (gameData.players[0] && gameData.players[0].id === localPlayerProfile.id) ? 0 : 1;
-                    listenToGameUpdates(currentGameId); return;
+                    listenToGameUpdates(currentGameId); return; // Success, don't re-enable buttons here
                 }
 
                 currentGameId = gameIdToJoin; localPlayerIndex = 1;
@@ -479,11 +529,13 @@
             } catch (error) {
                 console.error("Error uniéndose a la partida en Supabase:", error);
                 networkStatus.textContent = `Error al unirse: ${error.message}`;
-            } finally { // Asegurarse de rehabilitar botones si no se entró al juego
-                if (gameSection.classList.contains('hidden')) { // Solo si no se mostró la pantalla de juego
+                // Re-enable buttons in finally block if game screen wasn't shown
+            } finally {
+                if (gameSection.classList.contains('hidden')) {
                     createGameButton.disabled = false;
                     joinGameWithIdButton.disabled = false;
                     joinGameIdInput.disabled = false;
+                    refreshGamesButton.disabled = false;
                 }
             }
         }
@@ -526,9 +578,8 @@
                 updateAuthUI(null);
             }
             createGameButton.addEventListener('click', createGame);
-            // El botón de unirse por ID ahora es específico
-            joinGameWithIdButton.addEventListener('click', () => joinGame()); // Llama a joinGame sin argumento para que use el input
-            refreshGamesButton.addEventListener('click', fetchAndDisplayOpenGames); // Botón de refrescar
+            joinGameWithIdButton.addEventListener('click', () => joinGame());
+            refreshGamesButton.addEventListener('click', fetchAndDisplayOpenGames);
             resetButton.addEventListener('click', leaveGame);
         });
     </script>
