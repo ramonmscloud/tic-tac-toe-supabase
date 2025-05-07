@@ -294,7 +294,33 @@
 
         function displayAuthMessage(message, isError = false) { /* ... sin cambios ... */ }
         function clearAuthMessage() { /* ... sin cambios ... */ }
-        async function handleSignUp(event) { /* ... sin cambios ... */ }
+
+        async function handleSignUp(event) {
+            console.log("handleSignUp: Function called."); // DEBUG
+            event.preventDefault();
+            clearAuthMessage();
+            if (!supabase) {
+                console.error("handleSignUp: Supabase no está inicializado."); // DEBUG
+                displayAuthMessage("Supabase no está inicializado.", true);
+                return;
+            }
+
+            const email = signupForm.elements['signup-email'].value;
+            const password = signupForm.elements['signup-password'].value;
+            console.log("handleSignUp: Attempting to sign up with email:", email); // DEBUG
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+
+            if (error) {
+                console.error("handleSignUp: Error en registro:", error); // DEBUG
+                displayAuthMessage(`Error en registro: ${error.message}`, true);
+            } else {
+                console.log("handleSignUp: Usuario registrado:", data.user); // DEBUG
+                displayAuthMessage("¡Registro exitoso! Revisa tu email para confirmar si es necesario. Luego, inicia sesión.", false);
+                signupForm.classList.add('hidden');
+                signinForm.classList.remove('hidden');
+            }
+        }
         async function handleSignIn(event) { /* ... sin cambios ... */ }
         async function handleSignOut() { /* ... sin cambios ... */ }
 
@@ -313,7 +339,7 @@
                     id: user.id, name: user.email,
                     imageUrl: `https://placehold.co/60x60/${placeholderColor}/ffffff?text=${placeholderText}`
                 };
-                fetchAndDisplayOpenGames(); // <--- Llamar aquí
+                fetchAndDisplayOpenGames();
             } else {
                 authSection.classList.remove('hidden');
                 signinForm.classList.remove('hidden');
@@ -332,9 +358,9 @@
 
         // --- Funciones de Red ---
         async function fetchAndDisplayOpenGames() {
-            console.log("fetchAndDisplayOpenGames: Function called."); // DEBUG
-            console.log("fetchAndDisplayOpenGames: supabase initialized?", !!supabase); // DEBUG
-            console.log("fetchAndDisplayOpenGames: localPlayerProfile:", localPlayerProfile); // DEBUG
+            console.log("fetchAndDisplayOpenGames: Function called.");
+            console.log("fetchAndDisplayOpenGames: supabase initialized?", !!supabase);
+            console.log("fetchAndDisplayOpenGames: localPlayerProfile:", localPlayerProfile);
 
             if (!supabase || !localPlayerProfile) {
                 console.warn("fetchAndDisplayOpenGames: Supabase no listo o perfil local no disponible.");
@@ -343,7 +369,7 @@
                 openGamesListDiv.appendChild(noOpenGamesMessageP);
                 return;
             }
-            console.log("fetchAndDisplayOpenGames: Buscando partidas abiertas..."); // DEBUG
+            console.log("fetchAndDisplayOpenGames: Buscando partidas abiertas...");
             noOpenGamesMessageP.textContent = "Buscando partidas...";
             openGamesListDiv.innerHTML = '';
             openGamesListDiv.appendChild(noOpenGamesMessageP);
@@ -363,12 +389,12 @@
                     throw error;
                 }
 
-                console.log("fetchAndDisplayOpenGames: Raw data received from Supabase:", JSON.stringify(openGames)); // DEBUG
+                console.log("fetchAndDisplayOpenGames: Raw data received from Supabase:", JSON.stringify(openGames));
 
                 openGamesListDiv.innerHTML = '';
 
                 if (openGames && openGames.length > 0) {
-                    console.log("fetchAndDisplayOpenGames: Partidas encontradas:", openGames); // DEBUG
+                    console.log("fetchAndDisplayOpenGames: Partidas encontradas:", openGames);
                     openGames.forEach(game => {
                         const gameItem = document.createElement('div');
                         gameItem.classList.add('game-list-item');
@@ -390,13 +416,13 @@
                         openGamesListDiv.appendChild(gameItem);
                     });
                 } else {
-                    console.log("fetchAndDisplayOpenGames: No hay partidas abiertas disponibles."); // DEBUG
+                    console.log("fetchAndDisplayOpenGames: No hay partidas abiertas disponibles.");
                     noOpenGamesMessageP.textContent = "No hay partidas abiertas disponibles en este momento.";
                     openGamesListDiv.appendChild(noOpenGamesMessageP);
                 }
 
             } catch (error) {
-                console.error("fetchAndDisplayOpenGames: Excepción al obtener partidas:", error); // DEBUG
+                console.error("fetchAndDisplayOpenGames: Excepción al obtener partidas:", error);
                 if (openGamesListDiv.innerHTML === '' || openGamesListDiv.contains(noOpenGamesMessageP)) {
                     noOpenGamesMessageP.textContent = "Error al cargar la lista de partidas.";
                     openGamesListDiv.innerHTML = '';
@@ -450,7 +476,7 @@
                 networkStatus.textContent = `Partida creada! ID: ${currentGameId}. Esperando oponente...`;
                 gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`;
                 console.log(`createGame: ID de Partida: ${currentGameId}. Llamando a listenToGameUpdates.`);
-                listenToGameUpdates(currentGameId); // <--- Llamar al listener
+                listenToGameUpdates(currentGameId);
 
             } catch (error) {
                 console.error("createGame: Catch general - Error al crear la partida:", error);
@@ -465,11 +491,10 @@
         function mapSupabaseToLocalState(supabaseData) { /* ... sin cambios ... */ }
 
         function processGameStateUpdate(updatedData) {
-            try { // *** Añadir try...catch aquí ***
-                console.log(`processGameStateUpdate: Recibidos datos:`, JSON.stringify(updatedData)); // DEBUG - Usar stringify para ver todo
+            try {
+                console.log(`processGameStateUpdate: Recibidos datos (stringified):`, JSON.stringify(updatedData)); // DEBUG
                 gameState = mapSupabaseToLocalState(updatedData);
-                // Log cambiado para evitar error:
-                console.log(`processGameStateUpdate: Estado local actualizado (stringified):`, JSON.stringify(gameState)); // DEBUG - Usar stringify
+                console.log(`processGameStateUpdate: Estado local actualizado (stringified):`, JSON.stringify(gameState)); // DEBUG
                 console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}`); // DEBUG
 
                 const P0_DataExists = gameState.players && gameState.players[0] && gameState.players[0].id;
@@ -504,7 +529,7 @@
                         networkStatus.textContent = "Partida finalizada.";
                      }
                  }
-            } catch (error) { // *** Capturar error dentro de processGameStateUpdate ***
+            } catch (error) {
                  console.error("Error DENTRO de processGameStateUpdate:", error); // DEBUG
                  networkStatus.textContent = "Error al procesar datos de la partida.";
             }
@@ -512,10 +537,10 @@
 
         function listenToGameUpdates(gameId) {
             if (!supabase || !gameId) { console.error("listenToGameUpdates: Supabase no inicializado o gameId no proporcionado."); return; }
-            console.log(`listenToGameUpdates: Configurando listener para gameId: ${gameId}`); // DEBUG
+            console.log(`listenToGameUpdates: Configurando listener para gameId: ${gameId}`);
 
             if (realtimeChannel) {
-                console.log("listenToGameUpdates: Removiendo canal Realtime existente..."); // DEBUG
+                console.log("listenToGameUpdates: Removiendo canal Realtime existente...");
                 supabase.removeChannel(realtimeChannel)
                     .then(status => console.log("listenToGameUpdates: Canal Realtime anterior removido, estado:", status))
                     .catch(error => console.error("listenToGameUpdates: Error al remover canal Realtime previo:", error));
@@ -528,51 +553,51 @@
                     'postgres_changes',
                     { event: '*', schema: 'public', table: SUPABASE_TABLE_NAME, filter: `id=eq.${gameId}` },
                     (payload) => {
-                        console.log('listenToGameUpdates: Cambio recibido de Supabase:', payload); // DEBUG
+                        console.log('listenToGameUpdates: Cambio recibido de Supabase:', payload);
                         if (payload.eventType === 'DELETE') {
                             alert("La partida ha sido eliminada o ha terminado.");
-                            console.warn(`listenToGameUpdates: Partida ${gameId} eliminada.`); // DEBUG
+                            console.warn(`listenToGameUpdates: Partida ${gameId} eliminada.`);
                             leaveGame(); return;
                         }
                         const updatedGameData = payload.new;
-                        if (!updatedGameData) { console.warn("listenToGameUpdates: Payload de Supabase no contiene datos 'new'. Payload:", payload); return; } // DEBUG
-                        console.log("listenToGameUpdates: Datos actualizados del payload:", updatedGameData); // DEBUG
-                        processGameStateUpdate(updatedGameData); // <--- LLAMADA CLAVE
+                        if (!updatedGameData) { console.warn("listenToGameUpdates: Payload de Supabase no contiene datos 'new'. Payload:", payload); return; }
+                        console.log("listenToGameUpdates: Datos actualizados del payload:", updatedGameData);
+                        processGameStateUpdate(updatedGameData);
                     }
                 )
                 .subscribe(async (status, err) => {
                     if (status === 'SUBSCRIBED') {
-                        console.log(`listenToGameUpdates: Suscrito a cambios en la partida ${gameId}`); // DEBUG
+                        console.log(`listenToGameUpdates: Suscrito a cambios en la partida ${gameId}`);
                         networkStatus.textContent = "Conectado a la partida. Cargando estado...";
                         try {
-                            console.log(`listenToGameUpdates: Cargando estado inicial para ${gameId} tras suscripción.`); // DEBUG
+                            console.log(`listenToGameUpdates: Cargando estado inicial para ${gameId} tras suscripción.`);
                             const { data: initialData, error: initialError } = await supabase
                                 .from(SUPABASE_TABLE_NAME).select('*').eq('id', gameId).single();
 
-                            console.log("listenToGameUpdates: Raw initialData received after subscribe:", JSON.stringify(initialData)); // DEBUG
+                            console.log("listenToGameUpdates: Raw initialData received after subscribe:", JSON.stringify(initialData));
 
                             if (initialError) {
-                                console.error("listenToGameUpdates: Error cargando estado inicial (Supabase fetch):", initialError); // DEBUG
+                                console.error("listenToGameUpdates: Error cargando estado inicial (Supabase fetch):", initialError);
                                 if (initialError.code === 'PGRST116') {
                                      networkStatus.textContent = "La partida no existe o fue eliminada."; leaveGame();
                                 } else { networkStatus.textContent = "Error al cargar la partida."; }
                                 return;
                             }
                             if (initialData) {
-                                console.log("listenToGameUpdates: Estado inicial cargado con éxito. Procesando..."); // DEBUG
-                                processGameStateUpdate(initialData); // <--- LLAMADA CLAVE CON DATOS INICIALES
+                                console.log("listenToGameUpdates: Estado inicial cargado con éxito. Procesando...");
+                                processGameStateUpdate(initialData);
                             } else {
-                                console.warn(`listenToGameUpdates: No se encontró estado inicial para ${gameId}.`); // DEBUG
+                                console.warn(`listenToGameUpdates: No se encontró estado inicial para ${gameId}.`);
                                 networkStatus.textContent = "La partida no se encontró. Pudo haber sido eliminada."; leaveGame();
                             }
-                        } catch (e) { // Catch errors during processing or other issues
-                            console.error("listenToGameUpdates: Error crítico durante la carga/procesamiento inicial:", e); // <-- Log the actual error object
-                            networkStatus.textContent = "Error crítico al procesar datos de la partida."; // More specific message
+                        } catch (e) {
+                            console.error("listenToGameUpdates: Error crítico durante la carga/procesamiento inicial:", e);
+                            networkStatus.textContent = "Error crítico al procesar datos de la partida.";
                         }
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        console.error(`listenToGameUpdates: Error en canal Realtime (${status}):`, err); // DEBUG
+                        console.error(`listenToGameUpdates: Error en canal Realtime (${status}):`, err);
                         networkStatus.textContent = `Error de conexión Realtime (${status}). Intenta recargar.`;
-                    } else { console.log(`listenToGameUpdates: Estado del canal Realtime: ${status}`); } // DEBUG
+                    } else { console.log(`listenToGameUpdates: Estado del canal Realtime: ${status}`); }
                 });
         }
 
@@ -599,18 +624,43 @@
         function updateGameStatus() { /* ... sin cambios ... */ }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM fully loaded and parsed.");
+            console.log("DOM fully loaded and parsed."); // DEBUG
             const supabaseReady = initializeSupabase();
+            console.log("DOMContentLoaded: supabaseReady status:", supabaseReady); // DEBUG
 
-            showSignupLink.addEventListener('click', (e) => { /* ... sin cambios ... */ });
-            showSigninLink.addEventListener('click', (e) => { /* ... sin cambios ... */ });
+
+            showSignupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                signinForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                clearAuthMessage();
+            });
+            showSigninLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                signupForm.classList.add('hidden');
+                signinForm.classList.remove('hidden');
+                clearAuthMessage();
+            });
 
             if (supabaseReady) {
-                signinForm.addEventListener('submit', handleSignIn);
-                signupForm.addEventListener('submit', handleSignUp);
-                signoutButton.addEventListener('click', handleSignOut);
+                console.log("DOMContentLoaded: supabaseReady is true. Attaching auth event listeners."); // DEBUG
+                if (signinForm) signinForm.addEventListener('submit', handleSignIn);
+                else console.error("DOMContentLoaded: signinForm element not found!");
+
+                if (signupForm) { // Check if form element exists
+                    signupForm.addEventListener('submit', (event) => {
+                        console.log("signupForm submit event triggered."); // DEBUG
+                        handleSignUp(event);
+                    });
+                } else {
+                    console.error("DOMContentLoaded: signupForm element not found!"); // DEBUG
+                }
+
+                if (signoutButton) signoutButton.addEventListener('click', handleSignOut);
+                else console.error("DOMContentLoaded: signoutButton element not found!");
+
                 supabase.auth.onAuthStateChange((event, session) => {
-                    console.log('Auth event:', event, 'Session:', session);
+                    console.log('Auth event:', event, 'Session:', session); // DEBUG
                     const user = session?.user || null;
                     updateAuthUI(user);
                      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
@@ -618,12 +668,21 @@
                     }
                 });
             } else {
+                console.warn("DOMContentLoaded: supabaseReady is false. Auth event listeners NOT attached."); // DEBUG
                 updateAuthUI(null);
             }
-            createGameButton.addEventListener('click', createGame);
-            joinGameWithIdButton.addEventListener('click', () => joinGame());
-            refreshGamesButton.addEventListener('click', fetchAndDisplayOpenGames);
-            resetButton.addEventListener('click', leaveGame);
+
+            if (createGameButton) createGameButton.addEventListener('click', createGame);
+            else console.error("DOMContentLoaded: createGameButton element not found!");
+
+            if (joinGameWithIdButton) joinGameWithIdButton.addEventListener('click', () => joinGame());
+            else console.error("DOMContentLoaded: joinGameWithIdButton element not found!");
+
+            if (refreshGamesButton) refreshGamesButton.addEventListener('click', fetchAndDisplayOpenGames);
+            else console.error("DOMContentLoaded: refreshGamesButton element not found!");
+
+            if (resetButton) resetButton.addEventListener('click', leaveGame);
+            else console.error("DOMContentLoaded: resetButton element not found!");
         });
     </script>
 </body>
