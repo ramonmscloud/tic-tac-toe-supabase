@@ -227,7 +227,7 @@
         const createGameButton = document.getElementById('create-game-button');
         const gameIdDisplay = document.getElementById('game-id-display');
         const joinGameIdInput = document.getElementById('join-game-id');
-        const joinGameWithIdButton = document.getElementById('join-game-id-button'); // Corregido para coincidir con el ID del botón
+        const joinGameWithIdButton = document.getElementById('join-game-id-button');
         const networkStatus = document.getElementById('network-status');
         const openGamesListDiv = document.getElementById('open-games-list');
         const noOpenGamesMessageP = document.getElementById('no-open-games-message');
@@ -240,60 +240,54 @@
         const turnIndicator = document.getElementById('turn-indicator');
         const currentPlayerName = document.getElementById('current-player-name');
         const boardElement = document.getElementById('board');
-        let cells = []; // Se llenará en showGameScreen
+        let cells = [];
         const statusMessageContainer = document.getElementById('status-message-container');
-        let statusMessage = document.getElementById('status-message'); // El span dentro del contenedor
+        let statusMessage = document.getElementById('status-message');
         const resetButton = document.getElementById('reset-button');
 
 
         // --- Constantes ---
         const DEFAULT_IMAGE_URL = 'https://placehold.co/60x60/cccccc/ffffff?text=?';
-        const SUPABASE_TABLE_NAME = 'games'; // Nombre de tu tabla en Supabase para las partidas
+        const SUPABASE_TABLE_NAME = 'games';
 
         // --- Estado del Usuario y Juego ---
         let supabase = null;
         let realtimeChannel = null;
         let currentUser = null;
-        let localPlayerProfile = null; // { id, name, imageUrl }
+        let localPlayerProfile = null;
         let currentGameId = null;
-        let localPlayerIndex = -1; // 0 para el creador (X), 1 para el que se une (O)
+        let localPlayerIndex = -1;
         let gameState = {
             board: ['', '', '', '', '', '', '', '', ''],
-            currentPlayerIndex: 0, // 0 o 1
-            players: [null, null], // Array de perfiles de jugador { id, name, imageUrl }
+            currentPlayerIndex: 0,
+            players: [null, null],
             isGameOver: false,
-            winnerIndex: -1, // 0, 1, o -1 para empate/no terminado
-            winningCombination: null // Array de índices de la combinación ganadora
+            winnerIndex: -1,
+            winningCombination: null
         };
         const winningCombinations = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas
-            [0, 4, 8], [2, 4, 6]             // Diagonales
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
         ];
 
         // --- Inicialización de Supabase ---
         function initializeSupabase() {
             console.log("Intentando inicializar Supabase...");
             try {
-                // --- ¡¡¡REEMPLAZA CON TU URL Y ANON KEY DE SUPABASE AQUÍ!!! ---
-                const supabaseUrl = 'https://gjxhppuobvjuypsxqhah.supabase.co'; // <-- PON TU URL AQUÍ
-                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqeGhwcHVvYnZqdXlwc3hxaGFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0MzcxNzIsImV4cCI6MjA2MjAxMzE3Mn0.Rk1xe9CCyDccS4ueN-AI6Glv05xSK7hS2LXtxclLXtU'; // <-- PON TU ANON KEY AQUÍ
-                // --- ¡¡¡NO OLVIDES CONFIGURAR LAS POLÍTICAS DE ACCESO (RLS) EN TU TABLA 'games' EN SUPABASE!!! ---
+                const supabaseUrl = 'https://gjxhppuobvjuypsxqhah.supabase.co'; 
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqeGhwcHVvYnZqdXlwc3hxaGFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0MzcxNzIsImV4cCI6MjA2MjAxMzE3Mn0.Rk1xe9CCyDccS4ueN-AI6Glv05xSK7hS2LXtxclLXtU';
 
                 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('TU_') || supabaseKey.includes('TU_')) {
                      console.warn("Supabase URL o Key no configuradas. Por favor, edita el script y añade tus credenciales de Supabase.");
                      displayAuthMessage("Configuración de Supabase incompleta. Revisa la consola para más detalles.", true);
-                     // Podrías deshabilitar toda la funcionalidad de red aquí
                      throw new Error("Configuración de Supabase incompleta. URL o Key faltantes.");
                 }
-
-                // Verifica que el SDK de Supabase esté cargado
                 if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
-                    console.error("El SDK de Supabase no se ha cargado correctamente. Asegúrate de que el script de Supabase esté incluido antes de este script.");
+                    console.error("El SDK de Supabase no se ha cargado correctamente.");
                     displayAuthMessage("Error al cargar el SDK de Supabase. Revisa la consola.", true);
                     throw new Error("SDK de Supabase no cargado.");
                 }
-
                 supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 console.log("Supabase inicializado correctamente.");
                 return true;
@@ -301,11 +295,10 @@
                 console.error("Error inicializando Supabase:", error);
                 networkStatus.textContent = "Error al conectar con el servicio.";
                 displayAuthMessage(`Error al conectar: ${error.message}`, true);
-                // Asegurarse de que solo se muestre la sección de autenticación si falla la inicialización
                 authSection.classList.remove('hidden');
                 networkSection.classList.add('hidden');
                 gameSection.classList.add('hidden');
-                supabase = null; // Asegurar que supabase es null si la inicialización falla
+                supabase = null;
                 return false;
             }
         }
@@ -338,22 +331,17 @@
                 displayAuthMessage("Supabase no está inicializado. No se puede registrar.", true);
                 return;
             }
-
             const email = signupForm.elements['signup-email'].value;
             const password = signupForm.elements['signup-password'].value;
             console.log("handleSignUp: Attempting to sign up with email:", email);
-
             const { data, error } = await supabase.auth.signUp({ email, password });
-
             if (error) {
                 console.error("handleSignUp: Error en registro:", error);
                 displayAuthMessage(`Error en registro: ${error.message}`, true);
             } else {
                 console.log("handleSignUp: Usuario registrado:", data.user);
-                // data.user será null si la confirmación por email está habilitada y el usuario aún no ha confirmado.
-                // data.session será null también en ese caso.
                 displayAuthMessage("¡Registro exitoso! Revisa tu email para confirmar tu cuenta. Luego, inicia sesión.", false);
-                signupForm.reset(); // Limpiar el formulario
+                signupForm.reset();
                 signupForm.classList.add('hidden');
                 signinForm.classList.remove('hidden');
             }
@@ -363,18 +351,14 @@
             event.preventDefault();
             clearAuthMessage();
             if (!supabase) { displayAuthMessage("Supabase no está inicializado.", true); return; }
-
             const email = signinForm.elements['signin-email'].value;
             const password = signinForm.elements['signin-password'].value;
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
             if (error) {
                 displayAuthMessage(`Error al iniciar sesión: ${error.message}`, true);
                 console.error("Error al iniciar sesión:", error);
             } else {
-                // onAuthStateChange se encargará de actualizar la UI
-                // No es necesario llamar a updateAuthUI(data.user) aquí explícitamente
-                displayAuthMessage("Inicio de sesión exitoso. Cargando...", false); // Mensaje temporal
+                displayAuthMessage("Inicio de sesión exitoso. Cargando...", false);
                 console.log("Usuario inició sesión:", data.user);
                 signinForm.reset();
             }
@@ -383,13 +367,11 @@
         async function handleSignOut() {
             clearAuthMessage();
             if (!supabase) { displayAuthMessage("Supabase no está inicializado.", true); return; }
-
             const { error } = await supabase.auth.signOut();
             if (error) {
                 displayAuthMessage(`Error al cerrar sesión: ${error.message}`, true);
                 console.error("Error al cerrar sesión:", error);
             } else {
-                // onAuthStateChange se encargará de actualizar la UI y llamar a leaveGame si es necesario
                 displayAuthMessage("Sesión cerrada.", false);
                 console.log("Usuario cerró sesión.");
             }
@@ -405,21 +387,19 @@
                 networkSection.classList.remove('hidden');
                 createGameButton.disabled = false;
                 joinGameWithIdButton.disabled = false;
-
-                // Crear un perfil básico para el jugador local
                 const placeholderColor = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
                 const placeholderText = user.email.charAt(0).toUpperCase();
                 localPlayerProfile = {
                     id: user.id,
-                    name: user.email, // Podrías permitir al usuario establecer un nombre de usuario más adelante
+                    name: user.email,
                     imageUrl: `https://placehold.co/60x60/${placeholderColor}/ffffff?text=${placeholderText}`
                 };
                 console.log("updateAuthUI: localPlayerProfile creado:", localPlayerProfile);
-                fetchAndDisplayOpenGames(); // Cargar partidas abiertas al iniciar sesión
+                fetchAndDisplayOpenGames();
             } else {
                 console.log("updateAuthUI: No hay usuario.");
                 authSection.classList.remove('hidden');
-                signinForm.classList.remove('hidden'); // Mostrar signin por defecto
+                signinForm.classList.remove('hidden');
                 signupForm.classList.add('hidden');
                 userStatusSection.classList.add('hidden');
                 userEmailDisplay.textContent = '';
@@ -428,80 +408,99 @@
                 createGameButton.disabled = true;
                 joinGameWithIdButton.disabled = true;
                 localPlayerProfile = null;
-                if (realtimeChannel) leaveGame(); // Asegurarse de limpiar el estado del juego si se cierra sesión
+                if (realtimeChannel) leaveGame();
             }
-            // No limpiar authMessage aquí, ya que puede ser útil ver el último mensaje (ej. "Signed in")
         }
 
 
         // --- Funciones de Red (Crear/Unirse a Partida, Escuchar Cambios) ---
         async function fetchAndDisplayOpenGames() {
             console.log("fetchAndDisplayOpenGames: Function called.");
-            if (!supabase || !localPlayerProfile) {
-                console.warn("fetchAndDisplayOpenGames: Supabase no listo o perfil local no disponible.");
-                noOpenGamesMessageP.textContent = "Error al cargar partidas (no conectado).";
+            if (!supabase) {
+                console.error("fetchAndDisplayOpenGames: Supabase client is not initialized.");
+                noOpenGamesMessageP.textContent = "Error: Supabase no conectado.";
+                openGamesListDiv.innerHTML = ''; openGamesListDiv.appendChild(noOpenGamesMessageP);
+                return;
+            }
+            if (!localPlayerProfile || !localPlayerProfile.id) {
+                console.warn("fetchAndDisplayOpenGames: localPlayerProfile or localPlayerProfile.id is not available.");
+                noOpenGamesMessageP.textContent = "Error: Perfil de jugador no disponible.";
                 openGamesListDiv.innerHTML = ''; openGamesListDiv.appendChild(noOpenGamesMessageP);
                 return;
             }
 
+            console.log("fetchAndDisplayOpenGames: Attempting to fetch with localPlayerProfile.id:", localPlayerProfile.id);
             noOpenGamesMessageP.textContent = "Buscando partidas...";
-            openGamesListDiv.innerHTML = ''; // Limpiar lista anterior
-            openGamesListDiv.appendChild(noOpenGamesMessageP); // Mostrar mensaje de carga
+            openGamesListDiv.innerHTML = ''; 
+            openGamesListDiv.appendChild(noOpenGamesMessageP);
+            refreshGamesButton.disabled = true; // Disable button during fetch
 
             try {
-                const { data: openGames, error } = await supabase
+                const { data: openGames, error, status, count } = await supabase
                     .from(SUPABASE_TABLE_NAME)
-                    .select('id, players, created_at')
-                    .is('players->1', null) // Solo un jugador (el creador), el slot del jugador 2 está vacío
-                    .eq('is_game_over', false) // Partida no terminada
-                    .not('players->0->>id', 'eq', localPlayerProfile.id) // No mostrar mis propias partidas
+                    .select('id, players, created_at, is_game_over', { count: 'exact' }) // Added is_game_over for debugging, and count
+                    .is('players->1', null) 
+                    .eq('is_game_over', false) 
+                    .not('players->0->>id', 'eq', localPlayerProfile.id) 
                     .order('created_at', { ascending: false });
+
+                console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames, error, status, count });
 
                 if (error) {
                     console.error("fetchAndDisplayOpenGames: Error al obtener partidas:", error);
-                    noOpenGamesMessageP.textContent = "Error al cargar la lista de partidas.";
-                    throw error; // Propagar el error para el bloque catch
-                }
-
-                openGamesListDiv.innerHTML = ''; // Limpiar el mensaje "Buscando..."
-                if (openGames && openGames.length > 0) {
-                    openGames.forEach(game => {
-                        const gameItem = document.createElement('div');
-                        gameItem.classList.add('game-list-item');
-
-                        const gameInfo = document.createElement('div');
-                        const creatorNameP = document.createElement('p');
-                        creatorNameP.classList.add('creator-name');
-                        creatorNameP.textContent = `Creada por: ${game.players[0]?.name.split('@')[0] || 'Desconocido'}`;
-
-                        const gameIdP = document.createElement('p');
-                        gameIdP.classList.add('game-id-short');
-                        gameIdP.textContent = `ID: ${game.id.substring(0, 8)}...`;
-
-                        gameInfo.appendChild(creatorNameP);
-                        gameInfo.appendChild(gameIdP);
-
-                        const joinButton = document.createElement('button');
-                        joinButton.textContent = 'Unirse';
-                        joinButton.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white', 'font-bold', 'py-1', 'px-3', 'rounded-md', 'text-xs', 'sm:text-sm');
-                        joinButton.onclick = () => joinGame(game.id);
-
-                        gameItem.appendChild(gameInfo);
-                        gameItem.appendChild(joinButton);
-                        openGamesListDiv.appendChild(gameItem);
-                    });
+                    noOpenGamesMessageP.textContent = `Error al cargar partidas: ${error.message}`;
                 } else {
-                    noOpenGamesMessageP.textContent = "No hay partidas abiertas disponibles.";
-                    openGamesListDiv.appendChild(noOpenGamesMessageP);
+                    openGamesListDiv.innerHTML = ''; 
+                    if (openGames && openGames.length > 0) {
+                        console.log(`fetchAndDisplayOpenGames: ${openGames.length} partidas encontradas.`);
+                        openGames.forEach(game => {
+                            console.log("fetchAndDisplayOpenGames: Processing game:", game);
+                            if (!game.players || !game.players[0]) {
+                                console.warn("fetchAndDisplayOpenGames: Game object missing players[0] data:", game);
+                                return; 
+                            }
+
+                            const gameItem = document.createElement('div');
+                            gameItem.classList.add('game-list-item');
+
+                            const gameInfo = document.createElement('div');
+                            const creatorNameP = document.createElement('p');
+                            creatorNameP.classList.add('creator-name');
+                            const creatorName = game.players[0]?.name ? game.players[0].name.split('@')[0] : 'Desconocido';
+                            creatorNameP.textContent = `Creada por: ${creatorName}`;
+
+                            const gameIdP = document.createElement('p');
+                            gameIdP.classList.add('game-id-short');
+                            gameIdP.textContent = `ID: ${game.id.substring(0, 8)}...`;
+
+                            gameInfo.appendChild(creatorNameP);
+                            gameInfo.appendChild(gameIdP);
+
+                            const joinButton = document.createElement('button');
+                            joinButton.textContent = 'Unirse';
+                            joinButton.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white', 'font-bold', 'py-1', 'px-3', 'rounded-md', 'text-xs', 'sm:text-sm');
+                            joinButton.onclick = () => joinGame(game.id);
+
+                            gameItem.appendChild(gameInfo);
+                            gameItem.appendChild(joinButton);
+                            openGamesListDiv.appendChild(gameItem);
+                        });
+                    } else {
+                        console.log("fetchAndDisplayOpenGames: No hay partidas abiertas disponibles que coincidan con los criterios.");
+                        noOpenGamesMessageP.textContent = "No hay partidas abiertas disponibles.";
+                        openGamesListDiv.appendChild(noOpenGamesMessageP);
+                    }
                 }
-            } catch (error) {
-                console.error("fetchAndDisplayOpenGames: Excepción al obtener partidas:", error);
-                // Asegurarse de que si la lista está vacía, se muestre un mensaje de error apropiado
+            } catch (catchError) { 
+                console.error("fetchAndDisplayOpenGames: Excepción catastrófica al obtener partidas:", catchError);
+                noOpenGamesMessageP.textContent = "Error crítico al cargar la lista de partidas.";
                 if (openGamesListDiv.innerHTML === '' || openGamesListDiv.contains(noOpenGamesMessageP)) {
-                    noOpenGamesMessageP.textContent = "Error al cargar la lista de partidas.";
-                    openGamesListDiv.innerHTML = ''; // Limpiar por si acaso
+                    openGamesListDiv.innerHTML = ''; 
                     openGamesListDiv.appendChild(noOpenGamesMessageP);
                 }
+            } finally {
+                refreshGamesButton.disabled = false; // Re-enable button after fetch attempt
+                console.log("fetchAndDisplayOpenGames: Fetch attempt finished.");
             }
         }
 
@@ -516,33 +515,28 @@
             createGameButton.disabled = true; joinGameWithIdButton.disabled = true; refreshGamesButton.disabled = true;
 
             try {
-                // Estado inicial de la partida para Supabase
-                // El segundo jugador es null inicialmente
                 const initialGameStateForSupabase = {
                     board: Array(9).fill(''),
-                    current_player_index: 0, // El creador (X) empieza
-                    players: [localPlayerProfile, null], // Jugador 0 es el creador, Jugador 1 se unirá
+                    current_player_index: 0, 
+                    players: [localPlayerProfile, null], 
                     is_game_over: false,
                     winner_index: -1,
                     winning_combination: null
                 };
-
                 const { data, error } = await supabase
                     .from(SUPABASE_TABLE_NAME)
                     .insert([initialGameStateForSupabase])
-                    .select() // Para obtener el ID de la partida creada
-                    .single(); // Esperamos un solo registro
+                    .select() 
+                    .single(); 
 
                 if (error) throw error;
                 if (!data || !data.id) throw new Error("No se pudo obtener el ID de la partida creada.");
 
                 currentGameId = data.id;
-                localPlayerIndex = 0; // El creador es el jugador 0 (X)
+                localPlayerIndex = 0; 
                 networkStatus.textContent = `Partida creada! ID: ${currentGameId}. Esperando oponente...`;
-                gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`; // Mostrar ID de la partida
-
-                listenToGameUpdates(currentGameId); // Empezar a escuchar actualizaciones para esta partida
-
+                gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`; 
+                listenToGameUpdates(currentGameId); 
             } catch (error) {
                 console.error("Error al crear la partida:", error);
                 networkStatus.textContent = `Error al crear partida: ${error.message}. Intenta de nuevo.`;
@@ -556,18 +550,15 @@
                 networkStatus.textContent = "Debes iniciar sesión para unirte.";
                 return;
             }
-
             const gameIdToJoin = gameIdFromList || joinGameIdInput.value.trim();
             if (!gameIdToJoin) {
                 networkStatus.textContent = "Por favor, introduce un ID de partida.";
                 return;
             }
-
             networkStatus.textContent = `Uniéndose a la partida ${gameIdToJoin}...`;
             createGameButton.disabled = true; joinGameWithIdButton.disabled = true; refreshGamesButton.disabled = true;
 
             try {
-                // 1. Obtener el estado actual de la partida
                 const { data: gameData, error: fetchError } = await supabase
                     .from(SUPABASE_TABLE_NAME)
                     .select('*')
@@ -577,37 +568,26 @@
                 if (fetchError || !gameData) {
                     throw new Error(fetchError?.message || "Partida no encontrada o ya no está disponible.");
                 }
-
-                // 2. Validar si se puede unir
                 if (gameData.players[0].id === localPlayerProfile.id) {
-                    // El creador intenta unirse a su propia partida (quizás para reconectar)
-                    // Esto podría manejarse de forma diferente si se quiere permitir reconexión
-                    // Por ahora, si ya es P0, simplemente se suscribe (lo cual ya debería pasar)
                     console.log("joinGame: El creador ya está en la partida. Re-escuchando...");
                     currentGameId = gameIdToJoin;
-                    localPlayerIndex = 0; // Asegurar que el índice local es correcto
+                    localPlayerIndex = 0; 
                     listenToGameUpdates(currentGameId);
                     networkStatus.textContent = "Reconectado a tu partida. Esperando oponente si es necesario.";
-                    return; // No necesita actualizar la BD
+                    return; 
                 }
-
-                if (gameData.players[1] && gameData.players[1].id !== localPlayerProfile.id) { // Si hay P2 y no soy yo
+                if (gameData.players[1] && gameData.players[1].id !== localPlayerProfile.id) { 
                     throw new Error("La partida ya está llena.");
                 }
                 if (gameData.is_game_over) {
                     throw new Error("Esta partida ya ha terminado.");
                 }
 
-
-                // 3. Actualizar la partida con el nuevo jugador (jugador 1)
                 const updatedPlayers = [gameData.players[0], localPlayerProfile];
-                // Solo actualiza current_player_index si el P2 era null.
-                // Si P2 ya existe (es decir, soy yo re-uniéndome), no cambies el turno.
                 const updatePayload = { players: updatedPlayers };
-                if (!gameData.players[1]) { // Si el slot P2 estaba vacío, significa que un nuevo P2 se une
-                    updatePayload.current_player_index = 0; // El turno sigue siendo del P1 (creador) para el primer movimiento
+                if (!gameData.players[1]) { 
+                    updatePayload.current_player_index = 0; 
                 }
-
 
                 const { data: updateData, error: updateError } = await supabase
                     .from(SUPABASE_TABLE_NAME)
@@ -615,17 +595,14 @@
                     .eq('id', gameIdToJoin)
                     .select()
                     .single();
-
                 if (updateError) throw updateError;
 
                 currentGameId = gameIdToJoin;
-                localPlayerIndex = 1; // El que se une es el jugador 1 (O)
+                localPlayerIndex = 1; 
                 networkStatus.textContent = "¡Te has unido a la partida! Esperando inicio...";
-                gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`; // Mostrar ID
-                joinGameIdInput.value = ''; // Limpiar input
-
-                listenToGameUpdates(currentGameId); // Empezar a escuchar
-
+                gameIdDisplay.textContent = `ID de Partida: ${currentGameId}`; 
+                joinGameIdInput.value = ''; 
+                listenToGameUpdates(currentGameId); 
             } catch (error) {
                 console.error("Error al unirse a la partida:", error);
                 networkStatus.textContent = `Error al unirse: ${error.message}`;
@@ -633,11 +610,9 @@
             }
         }
 
-        // Mapea los datos de Supabase (con snake_case) al estado local (camelCase)
         function mapSupabaseToLocalState(supabaseData) {
             if (!supabaseData) {
                 console.error("mapSupabaseToLocalState: supabaseData es nulo o indefinido.");
-                // Devuelve un estado por defecto para evitar errores posteriores
                 return {
                     board: Array(9).fill(''),
                     currentPlayerIndex: 0,
@@ -647,13 +622,11 @@
                     winningCombination: null
                 };
             }
-            // Asegurar que players sea un array con dos elementos, incluso si Supabase devuelve null o un array más corto
             let playersArray = [null, null];
             if (supabaseData.players && Array.isArray(supabaseData.players)) {
                 playersArray[0] = supabaseData.players[0] || null;
                 playersArray[1] = supabaseData.players[1] || null;
             }
-
             return {
                 board: supabaseData.board || Array(9).fill(''),
                 currentPlayerIndex: typeof supabaseData.current_player_index === 'number' ? supabaseData.current_player_index : 0,
@@ -664,48 +637,36 @@
             };
         }
 
-
-        // Procesa la actualización del estado del juego recibida de Supabase
         function processGameStateUpdate(updatedData) {
             console.log(`processGameStateUpdate: Recibidos datos (stringified):`, JSON.stringify(updatedData));
-            gameState = mapSupabaseToLocalState(updatedData); // Actualiza el estado local del juego
+            gameState = mapSupabaseToLocalState(updatedData); 
             console.log(`processGameStateUpdate: Estado local actualizado (stringified):`, JSON.stringify(gameState));
             console.log(`processGameStateUpdate: localPlayerIndex: ${localPlayerIndex}, currentUser.id: ${currentUser?.id}`);
             console.log(`processGameStateUpdate: gameState.players:`, gameState.players);
-
 
             const P0_DataExists = gameState.players && gameState.players[0] && gameState.players[0].id;
             const P1_DataExists = gameState.players && gameState.players[1] && gameState.players[1].id;
             console.log(`processGameStateUpdate: P0_DataExists: ${P0_DataExists}, P1_DataExists: ${P1_DataExists}`);
 
-
-            // Lógica para mostrar la pantalla del juego
-            // Debe mostrarse si el jugador local es parte de la partida y la partida tiene al menos un jugador.
-            // O si es el jugador 1 y ambos jugadores están presentes.
-            if (gameSection.classList.contains('hidden')) { // Si la pantalla de juego está oculta
-                // Si soy el jugador 0 (creador) Y mis datos están en la partida
-                // O si soy el jugador 1 (el que se une) Y los datos de AMBOS jugadores están en la partida
+            if (gameSection.classList.contains('hidden')) { 
                 if ((localPlayerIndex === 0 && P0_DataExists) ||
                     (localPlayerIndex === 1 && P0_DataExists && P1_DataExists)) {
-                    showGameScreen(); // Mostrar la pantalla del juego
+                    showGameScreen(); 
                 } else {
-                    // Casos donde aún no se debe mostrar la pantalla de juego
                     if (localPlayerIndex === 0 && P0_DataExists && !P1_DataExists) {
                          networkStatus.textContent = `Esperando al Jugador 2... ID: ${currentGameId}`;
                     } else {
-                        // Podría ser un estado intermedio o un error si el jugador local no coincide
                         networkStatus.textContent = "Sincronizando partida...";
                         console.warn("processGameStateUpdate: Condiciones para mostrar pantalla de juego no cumplidas, pero se recibió actualización.");
                     }
                 }
-            } else { // Si la pantalla de juego ya está visible, solo actualizarla
+            } else { 
                 renderBoard();
                 updatePlayerInfo();
                 updatePlayerTurnDisplay();
                 updateGameStatus();
             }
 
-            // Actualizar el mensaje de networkStatus si la partida ya está en la pantalla de juego
              if (!gameSection.classList.contains('hidden')) {
                  if (P0_DataExists && P1_DataExists && !gameState.isGameOver) {
                     networkStatus.textContent = "¡Partida en curso!";
@@ -725,26 +686,23 @@
             }
             console.log(`listenToGameUpdates: Configurando listener para gameId: ${gameId}`);
 
-            // Si ya existe un canal, removerlo antes de crear uno nuevo
-            // Esto es importante si el usuario se une a una nueva partida después de estar en otra
             if (realtimeChannel) {
                 console.log("listenToGameUpdates: Removiendo canal Realtime existente...");
                 supabase.removeChannel(realtimeChannel)
                     .then(status => console.log("listenToGameUpdates: Canal Realtime anterior removido, estado:", status))
                     .catch(error => console.error("listenToGameUpdates: Error al remover canal Realtime previo:", error));
-                realtimeChannel = null; // Resetear la variable
+                realtimeChannel = null; 
             }
 
             realtimeChannel = supabase
-                .channel(`game-${gameId}`) // Un nombre de canal único por partida
+                .channel(`game-${gameId}`) 
                 .on('postgres_changes',
                     { event: '*', schema: 'public', table: SUPABASE_TABLE_NAME, filter: `id=eq.${gameId}` },
                     (payload) => {
                         console.log('listenToGameUpdates: Cambio recibido de Supabase:', payload);
                         if (payload.eventType === 'DELETE') {
-                            // La partida fue eliminada (ej. el creador abandonó antes de que alguien se uniera)
                             alert("La partida ha sido eliminada o ha terminado abruptamente.");
-                            leaveGame(); // Limpiar el estado local
+                            leaveGame(); 
                             return;
                         }
                         if (!payload.new) {
@@ -758,7 +716,6 @@
                     if (status === 'SUBSCRIBED') {
                         console.log(`listenToGameUpdates: Suscrito exitosamente al canal para la partida ${gameId}. Cargando estado inicial de la partida.`);
                         networkStatus.textContent = "Conectado al canal. Cargando partida...";
-                        // Una vez suscrito, obtener el estado actual de la partida por si nos perdimos algo
                         try {
                             const { data: initialData, error: initialError } = await supabase
                                 .from(SUPABASE_TABLE_NAME)
@@ -768,9 +725,9 @@
 
                             if (initialError) {
                                 console.error("Error cargando estado inicial de la partida (fetch post-suscripción):", initialError);
-                                if (initialError.code === 'PGRST116') { // "Not Found" - la partida no existe
+                                if (initialError.code === 'PGRST116') { 
                                      networkStatus.textContent = "La partida ya no existe o fue eliminada.";
-                                     leaveGame(); // Limpiar y volver a la pantalla de red
+                                     leaveGame(); 
                                 } else {
                                      networkStatus.textContent = "Error al cargar datos de la partida.";
                                 }
@@ -779,7 +736,6 @@
                             if (initialData) {
                                 processGameStateUpdate(initialData);
                             } else {
-                                // Esto no debería ocurrir si no hubo error, pero por si acaso
                                 networkStatus.textContent = "Partida no encontrada después de la suscripción.";
                                 leaveGame();
                             }
@@ -790,24 +746,15 @@
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                         console.error(`Error en el canal Realtime (${status}):`, err);
                         networkStatus.textContent = `Error de conexión Realtime (${status}). Intenta refrescar.`;
-                        // Aquí podrías implementar lógica de reintento o informar al usuario
                     } else {
                         console.log(`Estado del canal Realtime: ${status}`);
-                        // Otros estados: 'CLOSED', 'POSTGRES_CHANGES_ERROR', etc.
                     }
                 });
         }
 
         async function sendMove(cellIndex) {
-            // Validaciones:
-            // - Debe haber un currentGameId y Supabase inicializado.
-            // - El jugador local debe tener un índice asignado (0 o 1).
-            // - AMBOS jugadores deben estar presentes en gameState.players.
-            // - La celda debe estar vacía.
-            // - El juego no debe haber terminado.
-            // - Debe ser el turno del jugador local.
             if (!currentGameId || !supabase || localPlayerIndex === -1 ||
-                !gameState.players[0] || !gameState.players[1] || // <-- MODIFICACIÓN CLAVE
+                !gameState.players[0] || !gameState.players[1] || 
                 gameState.board[cellIndex] !== '' || gameState.isGameOver ||
                 gameState.currentPlayerIndex !== localPlayerIndex) {
                 console.warn("sendMove: Movimiento inválido, fuera de turno, o esperando jugadores. Detalles:", {
@@ -823,30 +770,26 @@
             const newBoard = [...gameState.board];
             newBoard[cellIndex] = symbol;
 
-            // Comprobar si hay ganador o empate
             const { winner, combination } = checkWinOrDraw(newBoard, symbol);
             let newIsGameOver = false;
             let newWinnerIndex = -1;
             let newWinningCombination = null;
-            let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % 2; // Cambiar turno
+            let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % 2; 
 
-            if (winner && winner !== 'draw') { // Si hay un ganador (X o O)
+            if (winner && winner !== 'draw') { 
                 newIsGameOver = true;
-                newWinnerIndex = localPlayerIndex; // El jugador actual (que hizo el movimiento) es el ganador
+                newWinnerIndex = localPlayerIndex; 
                 newWinningCombination = combination;
-            } else if (winner === 'draw' || !newBoard.includes('')) { // Empate (o tablero lleno sin ganador)
+            } else if (winner === 'draw' || !newBoard.includes('')) { 
                 newIsGameOver = true;
-                // winnerIndex se queda en -1 para empate
             }
 
-            // Preparar el estado para enviar a Supabase
             const updatedGameStateForSupabase = {
                 board: newBoard,
                 current_player_index: nextPlayerIndex,
                 is_game_over: newIsGameOver,
                 winner_index: newWinnerIndex,
                 winning_combination: newWinningCombination
-                // No necesitamos enviar 'players' aquí, ya que no cambian durante un movimiento
             };
 
             try {
@@ -858,11 +801,8 @@
                 if (error) {
                     console.error("Error al enviar movimiento a Supabase:", error);
                     networkStatus.textContent = "Error al enviar movimiento. Intenta de nuevo.";
-                    // Podrías revertir el movimiento localmente o re-sincronizar, pero es complejo.
-                    // Por ahora, solo mostramos error. El estado se re-sincronizará en la próxima actualización.
                 } else {
                     console.log("Movimiento enviado y actualizado en Supabase.");
-                    // El estado local se actualizará cuando llegue el cambio de Supabase a través del listener.
                 }
             } catch (error) {
                 console.error("Error catastrófico en sendMove (try-catch):", error);
@@ -883,16 +823,13 @@
                 realtimeChannel = null;
             }
 
-            const gameIdBeingLeft = currentGameId; // Guardar antes de resetear
+            const gameIdBeingLeft = currentGameId; 
             const playerIndexLeaving = localPlayerIndex;
-            const currentPlayersInGame = [...gameState.players]; // Copia para evitar problemas de referencia
+            
+            resetLocalGameState(); 
 
-            resetLocalGameState(); // Limpia el estado local del juego primero
-
-            // Lógica para manejar el abandono en Supabase
             if (gameIdBeingLeft && supabase && currentUser) {
                 try {
-                    // Obtener el estado más reciente de la partida antes de modificarla
                     const { data: gameBeforeLeaving, error: fetchErr } = await supabase
                         .from(SUPABASE_TABLE_NAME)
                         .select('players, is_game_over')
@@ -901,22 +838,18 @@
 
                     if (fetchErr) {
                         console.warn("leaveGame: No se pudo obtener el estado de la partida antes de abandonar:", fetchErr.message);
-                        // Continuar con la limpieza local de todas formas
                     } else if (gameBeforeLeaving && !gameBeforeLeaving.is_game_over) {
-                        // Si la partida no ha terminado y el jugador existe en la partida
                         if (playerIndexLeaving === 0 && gameBeforeLeaving.players[0]?.id === currentUser.id) {
-                            // El creador (P0) abandona
-                            if (!gameBeforeLeaving.players[1]) { // Si no hay P1, borrar la partida
+                            if (!gameBeforeLeaving.players[1]) { 
                                 console.log("leaveGame: Player 0 (creator) leaving an empty game. Deleting game.");
                                 await supabase.from(SUPABASE_TABLE_NAME).delete().eq('id', gameIdBeingLeft);
-                            } else { // Si hay P1, P1 gana por abandono
+                            } else { 
                                 console.log("leaveGame: Player 0 (creator) leaving. Player 1 wins by forfeit.");
                                 await supabase.from(SUPABASE_TABLE_NAME)
-                                    .update({ is_game_over: true, winner_index: 1, current_player_index: -1 /* o mantener el actual */ })
+                                    .update({ is_game_over: true, winner_index: 1, current_player_index: -1 })
                                     .eq('id', gameIdBeingLeft);
                             }
                         } else if (playerIndexLeaving === 1 && gameBeforeLeaving.players[1]?.id === currentUser.id) {
-                            // El jugador que se unió (P1) abandona, P0 gana por abandono
                             console.log("leaveGame: Player 1 leaving. Player 0 wins by forfeit.");
                             await supabase.from(SUPABASE_TABLE_NAME)
                                 .update({ is_game_over: true, winner_index: 0, current_player_index: -1 })
@@ -928,20 +861,18 @@
                 }
             }
 
-
-            // UI Updates
             gameSection.classList.add('hidden');
-            gameIdDisplay.textContent = ''; // Limpiar el ID de partida mostrado
-            statusMessage.textContent = ''; // Limpiar mensaje de estado del juego
-            networkStatus.textContent = 'Has abandonado la partida.'; // Mensaje general
+            gameIdDisplay.textContent = ''; 
+            statusMessage.textContent = ''; 
+            networkStatus.textContent = 'Has abandonado la partida.'; 
 
-            if (currentUser) { // Si el usuario sigue logueado
+            if (currentUser) { 
                 networkSection.classList.remove('hidden');
                 createGameButton.disabled = false;
                 joinGameWithIdButton.disabled = false;
-                refreshGamesButton.disabled = false; // Habilitar botón de refrescar
-                fetchAndDisplayOpenGames(); // Actualizar lista de partidas
-            } else { // Si el usuario cerró sesión (onAuthStateChange ya maneja esto, pero por si acaso)
+                refreshGamesButton.disabled = false; 
+                fetchAndDisplayOpenGames(); 
+            } else { 
                 authSection.classList.remove('hidden');
                 networkSection.classList.add('hidden');
             }
@@ -960,19 +891,17 @@
                 winnerIndex: -1,
                 winningCombination: null
             };
-            // Limpiar el tablero visualmente
             if (cells && cells.length > 0) {
                 cells.forEach(cell => {
                     cell.textContent = '';
                     cell.classList.remove('winning-cell', 'disabled');
                 });
             }
-            // Resetear información de jugadores
             playerImageElements.forEach(img => img.src = DEFAULT_IMAGE_URL);
             playerNameElements.forEach(nameEl => nameEl.textContent = 'Jugador ?');
             playerInfoElements.forEach(infoEl => infoEl.classList.remove('active'));
             turnIndicator.classList.add('hidden');
-            statusMessage.textContent = ''; // Limpiar mensaje de estado
+            statusMessage.textContent = ''; 
         }
 
 
@@ -983,14 +912,12 @@
              networkSection.classList.add('hidden');
              gameSection.classList.remove('hidden');
 
-             // Inicializar las celdas del tablero si aún no se ha hecho
              if (cells.length === 0) {
                  cells = Array.from(boardElement.querySelectorAll('.cell'));
                  cells.forEach(cell => {
                      cell.addEventListener('click', handleCellClick);
                  });
              }
-             // Renderizar el estado actual del juego
              renderBoard();
              updatePlayerInfo();
              updatePlayerTurnDisplay();
@@ -998,7 +925,7 @@
         }
 
         function updatePlayerInfo() {
-            if (!gameState.players) return; // Protección por si players es null/undefined
+            if (!gameState.players) return; 
 
             gameState.players.forEach((player, index) => {
                 const nameToShow = player ? (player.name.split('@')[0] || `Jugador ${index + 1}`) : `Jugador ${index + 1}`;
@@ -1006,30 +933,22 @@
                 playerImageElements[index].src = player?.imageUrl || DEFAULT_IMAGE_URL;
                 playerImageElements[index].alt = nameToShow;
 
-                // Resaltar jugador activo solo si ambos jugadores están presentes y el juego no ha terminado
                 playerInfoElements[index].classList.toggle('active',
-                    gameState.players[0] && gameState.players[1] && // <-- MODIFICACIÓN CLAVE
+                    gameState.players[0] && gameState.players[1] && 
                     index === gameState.currentPlayerIndex &&
                     !gameState.isGameOver);
             });
         }
 
         function renderBoard() {
-            if (!cells || cells.length === 0) return; // Asegurarse de que las celdas estén inicializadas
+            if (!cells || cells.length === 0) return; 
 
             gameState.board.forEach((value, index) => {
                 cells[index].textContent = value;
-                cells[index].classList.remove('winning-cell'); // Limpia el resaltado de victoria anterior
+                cells[index].classList.remove('winning-cell'); 
 
-                // Determina si la celda debe estar habilitada
-                // Condiciones para que una celda esté HABILITADA (no 'disabled'):
-                // 1. La celda está vacía ('').
-                // 2. El juego NO ha terminado (gameState.isGameOver es false).
-                // 3. AMBOS jugadores están presentes (gameState.players[0] y gameState.players[1] existen).
-                // 4. El jugador local tiene un índice válido (localPlayerIndex no es -1).
-                // 5. Es el turno del jugador local (localPlayerIndex === gameState.currentPlayerIndex).
                 const gameReadyForMoves = !gameState.isGameOver &&
-                                           gameState.players[0] && gameState.players[1] && // <-- MODIFICACIÓN CLAVE
+                                           gameState.players[0] && gameState.players[1] && 
                                            localPlayerIndex !== -1 &&
                                            localPlayerIndex === gameState.currentPlayerIndex;
 
@@ -1039,7 +958,6 @@
                     cells[index].classList.add('disabled');
                 }
 
-                // Aplica el estilo de celda ganadora si corresponde (independientemente de si está deshabilitada)
                 if (gameState.winningCombination && gameState.winningCombination.includes(index)) {
                     cells[index].classList.add('winning-cell');
                 }
@@ -1054,17 +972,13 @@
             }
             const index = parseInt(event.target.dataset.index);
 
-            // La validación principal de si se puede mover se hace en sendMove,
-            // pero una comprobación rápida aquí puede evitar llamadas innecesarias.
-            // La clase 'disabled' ya debería prevenir la mayoría de los clics no válidos visualmente.
             if (event.target.classList.contains('disabled')) {
                 console.log("handleCellClick: Clic en celda deshabilitada.");
                 return;
             }
-            // Adicionalmente, podemos verificar las condiciones lógicas aquí también por si acaso
             if (gameState.board[index] === '' &&
                 !gameState.isGameOver &&
-                gameState.players[0] && gameState.players[1] && // Ambos jugadores deben estar
+                gameState.players[0] && gameState.players[1] && 
                 gameState.currentPlayerIndex === localPlayerIndex) {
                 sendMove(index);
             } else {
@@ -1073,8 +987,6 @@
         }
 
         function updatePlayerTurnDisplay() {
-            // Ocultar si el juego terminó, o si alguno de los jugadores no está presente,
-            // o si no hay datos del jugador actual (aunque esto último es menos probable si los dos primeros se cumplen)
             if (gameState.isGameOver || !gameState.players[0] || !gameState.players[1] || !gameState.players[gameState.currentPlayerIndex]) {
                 turnIndicator.classList.add('hidden');
                 return;
@@ -1082,7 +994,6 @@
 
             turnIndicator.classList.remove('hidden');
             const currentTurnPlayer = gameState.players[gameState.currentPlayerIndex];
-            // Mostrar solo la parte del email antes del @, o el símbolo si no hay nombre
             currentPlayerName.textContent = currentTurnPlayer?.name.split('@')[0] || (gameState.currentPlayerIndex === 0 ? 'X' : 'O');
         }
 
@@ -1090,55 +1001,45 @@
             for (const combination of winningCombinations) {
                 const [a, b, c] = combination;
                 if (boardToCheck[a] === lastSymbol && boardToCheck[b] === lastSymbol && boardToCheck[c] === lastSymbol) {
-                    return { winner: lastSymbol, combination }; // Devuelve el símbolo ganador y la combinación
+                    return { winner: lastSymbol, combination }; 
                 }
             }
-            // Si no hay ganador y no quedan celdas vacías, es empate
             if (!boardToCheck.includes('')) {
                 return { winner: 'draw', combination: null };
             }
-            // Si no hay ganador y aún hay celdas vacías, el juego continúa
             return { winner: null, combination: null };
         }
 
         function updateGameStatus() {
-            statusMessage.innerHTML = ''; // Limpiar mensajes anteriores
-            statusMessageContainer.classList.remove('hidden'); // Asegurar que el contenedor sea visible
+            statusMessage.innerHTML = ''; 
+            statusMessageContainer.classList.remove('hidden'); 
 
             if (gameState.isGameOver) {
-                turnIndicator.classList.add('hidden'); // Ocultar indicador de turno
+                turnIndicator.classList.add('hidden'); 
                 let winnerProfile = (gameState.winnerIndex !== -1 && gameState.players[gameState.winnerIndex]) ? gameState.players[gameState.winnerIndex] : null;
 
                 if (winnerProfile) {
-                    // Mostrar imagen del ganador
                     const winnerImg = document.createElement('img');
                     winnerImg.src = winnerProfile.imageUrl || DEFAULT_IMAGE_URL;
                     winnerImg.alt = winnerProfile.name;
                     winnerImg.classList.add('winner-image');
                     statusMessage.appendChild(winnerImg);
                     statusMessage.appendChild(document.createTextNode(`¡${winnerProfile.name.split('@')[0]} ha ganado!`));
-                } else if (gameState.winnerIndex === -1 && !gameState.board.includes('')) { // Empate (winnerIndex es -1 y tablero lleno)
+                } else if (gameState.winnerIndex === -1 && !gameState.board.includes('')) { 
                     statusMessage.textContent = "¡Es un empate!";
                 } else {
-                    // Podría ser un estado de juego terminado sin un ganador claro (ej. por abandono donde no se seteó winnerIndex, aunque leaveGame debería manejarlo)
                     statusMessage.textContent = "Partida terminada.";
                 }
-                // Deshabilitar todas las celdas ya se maneja en renderBoard al poner isGameOver a true
-                // Habilitar botones de red para nueva partida
                 if (currentUser) {
                     createGameButton.disabled = false;
                     joinGameWithIdButton.disabled = false;
                     refreshGamesButton.disabled = false;
                 }
-            } else { // Si la partida NO ha terminado
+            } else { 
                 if (!gameState.players[0] || !gameState.players[1]) {
                     statusMessage.textContent = "Esperando jugadores...";
                 } else {
-                    // Partida en curso y ambos jugadores presentes.
-                    // El indicador de turno es suficiente, así que podemos limpiar el statusMessage.
                     statusMessage.textContent = "";
-                    // Opcionalmente, ocultar el contenedor si no hay mensaje:
-                    // statusMessageContainer.classList.add('hidden');
                 }
             }
         }
@@ -1147,72 +1048,54 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DOM fully loaded and parsed.");
 
-            // Intenta inicializar Supabase
             const supabaseReady = initializeSupabase();
             console.log("DOMContentLoaded: supabaseReady status:", supabaseReady);
 
-            // Configurar listeners para cambiar entre formularios de login/signup
             showSignupLink.addEventListener('click', (e) => { e.preventDefault(); signinForm.classList.add('hidden'); signupForm.classList.remove('hidden'); clearAuthMessage(); });
             showSigninLink.addEventListener('click', (e) => { e.preventDefault(); signupForm.classList.add('hidden'); signinForm.classList.remove('hidden'); clearAuthMessage(); });
 
             if (supabaseReady) {
                 console.log("DOMContentLoaded: supabaseReady is true. Attaching auth and game event listeners.");
 
-                // Listeners de autenticación
                 if (signinForm) signinForm.addEventListener('submit', handleSignIn);
                 if (signupForm) signupForm.addEventListener('submit', handleSignUp);
                 if (signoutButton) signoutButton.addEventListener('click', handleSignOut);
 
-                // Listener para cambios de estado de autenticación (login, logout, token refresh)
                 supabase.auth.onAuthStateChange((event, session) => {
                     console.log('[AUTH_STATE_CHANGE] Event:', event, 'Session:', session);
 
                     const user = session?.user || null;
-                    updateAuthUI(user); // Actualiza la UI general basada en el estado del usuario
+                    updateAuthUI(user); 
 
-                    // Manejo específico de eventos de autenticación
                     if (event === 'SIGNED_IN' && session) {
                         console.log('[AUTH_STATE_CHANGE] SIGNED_IN event detected successfully! User:', session.user.email);
-                        clearAuthMessage(); // Limpiar mensajes de error/éxito de formularios
-                        displayAuthMessage("Sesión iniciada correctamente.", false); // Mensaje de bienvenida
-                        // Limpiar el hash de la URL si contiene tokens de autenticación (opcional)
-                        // if (window.location.hash.includes('access_token')) {
-                        //    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-                        // }
+                        clearAuthMessage(); 
+                        displayAuthMessage("Sesión iniciada correctamente.", false); 
                     } else if (event === 'INITIAL_SESSION' && !session) {
                         console.log('[AUTH_STATE_CHANGE] Initial session, no user.');
-                        // Si hay un hash de error (como otp_expired o error de magic link), muéstralo
                         if (window.location.hash.includes('error=')) {
                             try {
-                                const params = new URLSearchParams(window.location.hash.substring(1)); // Quita el #
+                                const params = new URLSearchParams(window.location.hash.substring(1)); 
                                 const errorDescription = params.get('error_description');
                                 if (errorDescription) {
                                     displayAuthMessage(`Error de autenticación: ${decodeURIComponent(errorDescription.replace(/\+/g, ' '))}`, true);
-                                     // Limpiar el hash para que no se muestre repetidamente
                                     window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
                                 }
                             } catch (e) { console.error("Error parsing auth error from hash", e); }
                         }
                     } else if (event === 'SIGNED_OUT') {
                         console.log('[AUTH_STATE_CHANGE] SIGNED_OUT event.');
-                        // updateAuthUI ya se encarga de llamar a leaveGame si es necesario y limpiar el estado
                         displayAuthMessage("Sesión cerrada.", false);
                     } else if (event === 'USER_DELETED') {
                         console.log('[AUTH_STATE_CHANGE] USER_DELETED event.');
                         displayAuthMessage("Tu cuenta ha sido eliminada.", true);
                     } else if (event === 'PASSWORD_RECOVERY') {
-                        // Esto ocurre cuando el usuario ha hecho clic en un enlace de recuperación de contraseña
-                        // y está en la página donde puede establecer una nueva contraseña.
-                        // Aquí no es necesario hacer mucho, ya que Supabase maneja el flujo.
-                        // Podrías mostrar un mensaje si esta página también es la principal.
-                        console.log('[AUTH_STATE_CHANGE] PASSWORD_RECOVERY event. El usuario debería estar en una página de reseteo de contraseña.');
+                        console.log('[AUTH_STATE_CHANGE] PASSWORD_RECOVERY event.');
                         displayAuthMessage("Estás en modo de recuperación de contraseña. Sigue las instrucciones para resetearla.", false);
                     } else if (event === 'TOKEN_REFRESHED'){
                         console.log('[AUTH_STATE_CHANGE] TOKEN_REFRESHED event.');
-                        // No se necesita acción UI usualmente, pero es bueno saber que ocurrió.
                     } else if (event === 'USER_UPDATED') {
                         console.log('[AUTH_STATE_CHANGE] USER_UPDATED event.');
-                        // Actualizar UI si el email del usuario cambió, etc.
                         if (user && userEmailDisplay.textContent !== user.email) {
                             userEmailDisplay.textContent = user.email;
                         }
@@ -1220,20 +1103,17 @@
                 });
             } else {
                 console.warn("DOMContentLoaded: supabaseReady is false. Funcionalidad de red y autenticación limitada o deshabilitada. Auth event listeners NOT attached.");
-                // Mostrar solo la sección de autenticación con un mensaje de error si Supabase no se pudo inicializar
-                updateAuthUI(null); // Asegura que la UI refleje que no hay usuario
+                updateAuthUI(null); 
                 displayAuthMessage("Error crítico: No se pudo conectar al servicio. La funcionalidad online no está disponible.", true);
-                // Deshabilitar botones que dependen de Supabase
                 createGameButton.disabled = true;
                 joinGameWithIdButton.disabled = true;
                 refreshGamesButton.disabled = true;
             }
 
-            // Listeners de botones de red y juego
             if (createGameButton) createGameButton.addEventListener('click', createGame);
-            if (joinGameWithIdButton) joinGameWithIdButton.addEventListener('click', () => joinGame()); // Llama a joinGame sin argumento para que use el input
+            if (joinGameWithIdButton) joinGameWithIdButton.addEventListener('click', () => joinGame()); 
             if (refreshGamesButton) refreshGamesButton.addEventListener('click', fetchAndDisplayOpenGames);
-            if (resetButton) resetButton.addEventListener('click', leaveGame); // El botón de "Abandonar Partida"
+            if (resetButton) resetButton.addEventListener('click', leaveGame); 
         });
     </script>
 </body>
