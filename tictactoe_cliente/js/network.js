@@ -25,19 +25,41 @@ async function fetchAndDisplayOpenGames() {
         // Query for games that are not over, have only one player (players[1] is null),
         // and where the existing player (players[0]) is not the current user.
         const { data: openGames, error } = await supabase
-console.log("Depuración: Valor de localPlayerProfile.id:", localPlayerProfile.id); // Depuración: Verificar el valor de localPlayerProfile.id
-
-        const { data: openGamesResult, error: queryError } = await supabase
+            .from(SUPABASE_TABLE_NAME)
             .select('id, players, created_at, is_game_over')
-            .eq('is_game_over', false) // Game is not over
-            .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
-            .neq('players[0]->>id', JSON.stringify(localPlayerProfile.id)) // Exclude games where the current user is already a player
+            .eq('is_game_over', false)
+            .is('players[1]', null)
+            .neq('players[0]->>id', JSON.stringify(localPlayerProfile.id))
             .order('created_at', { ascending: false });
 
-// Log para depuración
-console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGamesResult || null);
-console.log("fetchAndDisplayOpenGames: Error de Supabase:", queryError);
-        console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
+        if (error) {
+            noOpenGamesMessageP.textContent = `Error al cargar partidas: ${error.message}`;
+            return;
+        }
+
+        openGamesListDiv.innerHTML = '';
+        if (openGames?.length) {
+            openGames.forEach(game => {
+                const gameItem = document.createElement('div');
+                gameItem.classList.add('game-list-item');
+
+                const gameInfo = document.createElement('div');
+                const creatorName = game.players[0]?.name?.split('@')[0] || 'Desconocido';
+                gameInfo.innerHTML = `<p class="creator-name">Creada por: ${creatorName}</p>
+                                      <p class="game-id-short">ID: ${game.id.substring(0, 8)}...</p>`;
+
+                const joinButton = document.createElement('button');
+                joinButton.textContent = 'Unirse';
+                joinButton.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-md text-xs sm:text-sm';
+                joinButton.onclick = () => joinGame(game.id);
+
+                gameItem.append(gameInfo, joinButton);
+                openGamesListDiv.appendChild(gameItem);
+            });
+        } else {
+            noOpenGamesMessageP.textContent = "No hay partidas abiertas disponibles.";
+            openGamesListDiv.appendChild(noOpenGamesMessageP);
+        }
 
         if (error) {
             console.error("fetchAndDisplayOpenGames: Error al obtener partidas:", error);

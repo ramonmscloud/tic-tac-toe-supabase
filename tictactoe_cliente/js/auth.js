@@ -1,30 +1,22 @@
 // --- Funciones de Autenticación y UI ---
 
 function initializeSupabase() {
-    console.log("Intentando inicializar Supabase...");
     try {
-        // Supabase URL and Key are now in globals.js
         if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.includes('TU_') || SUPABASE_KEY.includes('TU_')) {
-             console.warn("Supabase URL o Key no configuradas. Por favor, edita globals.js y añade tus credenciales de Supabase.");
-             displayAuthMessage("Configuración de Supabase incompleta. Revisa la consola para más detalles.", true);
-             throw new Error("Configuración de Supabase incompleta. URL o Key faltantes.");
+            throw new Error("Configuración de Supabase incompleta.");
         }
-        if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
-            console.error("El SDK de Supabase no se ha cargado correctamente.");
-            displayAuthMessage("Error al cargar el SDK de Supabase. Revisa la consola.", true);
+        if (!window.supabase?.createClient) {
             throw new Error("SDK de Supabase no cargado.");
         }
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); // Assign to global supabase
-        console.log("Supabase inicializado correctamente.");
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         return true;
     } catch (error) {
-        console.error("Error inicializando Supabase:", error);
-        if(networkStatus) networkStatus.textContent = "Error al conectar con el servicio.";
+        networkStatus && (networkStatus.textContent = "Error al conectar con el servicio.");
         displayAuthMessage(`Error al conectar: ${error.message}`, true);
-        if(authSection) authSection.classList.remove('hidden');
-        if(networkSection) networkSection.classList.add('hidden');
-        if(gameSection) gameSection.classList.add('hidden');
-        supabase = null; // Ensure supabase is null if init fails
+        authSection?.classList.remove('hidden');
+        networkSection?.classList.add('hidden');
+        gameSection?.classList.add('hidden');
+        supabase = null;
         return false;
     }
 }
@@ -32,14 +24,9 @@ function initializeSupabase() {
 function displayAuthMessage(message, isError = false) {
     if (!authMessageDisplay) return;
     authMessageDisplay.textContent = message;
-    authMessageDisplay.classList.remove('hidden');
-    if (isError) {
-        authMessageDisplay.classList.remove('success');
-        authMessageDisplay.classList.add('error');
-    } else {
-        authMessageDisplay.classList.remove('error');
-        authMessageDisplay.classList.add('success');
-    }
+    authMessageDisplay.classList.toggle('hidden', false);
+    authMessageDisplay.classList.toggle('error', isError);
+    authMessageDisplay.classList.toggle('success', !isError);
 }
 
 function clearAuthMessage() {
@@ -50,25 +37,18 @@ function clearAuthMessage() {
 }
 
 async function handleSignUp(event) {
-    console.log("handleSignUp: Function called.");
     event.preventDefault();
     clearAuthMessage();
     if (!supabase) {
-        console.error("handleSignUp: Supabase no está inicializado.");
-        displayAuthMessage("Supabase no está inicializado. No se puede registrar.", true);
+        displayAuthMessage("Supabase no está inicializado.", true);
         return;
     }
-    const email = signupForm.elements['signup-email'].value;
-    const password = signupForm.elements['signup-password'].value;
-    console.log("handleSignUp: Attempting to sign up with email:", email);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { email, password } = Object.fromEntries(new FormData(signupForm));
+    const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
-        console.error("handleSignUp: Error en registro:", error);
         displayAuthMessage(`Error en registro: ${error.message}`, true);
     } else {
-        console.log("handleSignUp: Usuario registrado:", data.user);
-        // Advise user to check email, Supabase handles confirmation.
-        displayAuthMessage("¡Registro exitoso! Revisa tu email para confirmar tu cuenta. Luego, inicia sesión.", false);
+        displayAuthMessage("¡Registro exitoso! Revisa tu email para confirmar tu cuenta.", false);
         signupForm.reset();
         signupForm.classList.add('hidden');
         signinForm.classList.remove('hidden');
@@ -78,86 +58,72 @@ async function handleSignUp(event) {
 async function handleSignIn(event) {
     event.preventDefault();
     clearAuthMessage();
-    if (!supabase) { displayAuthMessage("Supabase no está inicializado.", true); return; }
-    const email = signinForm.elements['signin-email'].value;
-    const password = signinForm.elements['signin-password'].value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!supabase) {
+        displayAuthMessage("Supabase no está inicializado.", true);
+        return;
+    }
+    const { email, password } = Object.fromEntries(new FormData(signinForm));
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
         displayAuthMessage(`Error al iniciar sesión: ${error.message}`, true);
-        console.error("Error al iniciar sesión:", error);
     } else {
-        // onAuthStateChange will handle the rest of the UI update
         displayAuthMessage("Inicio de sesión exitoso. Cargando...", false);
-        console.log("Usuario inició sesión:", data.user);
         signinForm.reset();
-        // UI update is handled by onAuthStateChange
     }
 }
 
 async function handleSignOut() {
     clearAuthMessage();
-    if (!supabase) { displayAuthMessage("Supabase no está inicializado.", true); return; }
+    if (!supabase) {
+        displayAuthMessage("Supabase no está inicializado.", true);
+        return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
         displayAuthMessage(`Error al cerrar sesión: ${error.message}`, true);
-        console.error("Error al cerrar sesión:", error);
     } else {
-        // onAuthStateChange will handle UI update
-        displayAuthMessage("Sesión cerrada.", false); // Brief message
-        console.log("Usuario cerró sesión.");
-        // Global currentUser will be set to null by onAuthStateChange
+        displayAuthMessage("Sesión cerrada.", false);
     }
 }
 
 function updateAuthUI(user) {
-    currentUser = user; // Update global currentUser
+    currentUser = user;
     if (user) {
-        console.log("updateAuthUI: Usuario detectado:", user.email);
         authSection.classList.add('hidden');
         userStatusSection.classList.remove('hidden');
         userEmailDisplay.textContent = user.email;
-
         networkSection.classList.remove('hidden');
-        gameSection.classList.add('hidden'); // Hide game section when auth state changes, re-join if needed
+        gameSection.classList.add('hidden');
         createGameButton.disabled = false;
         joinGameWithIdButton.disabled = false;
         refreshGamesButton.disabled = false;
 
-
-        // Create a simple local player profile
-        const placeholderColor = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        const placeholderColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
         const placeholderText = user.email.charAt(0).toUpperCase();
         localPlayerProfile = {
             id: user.id,
-            name: user.email, // Or a display name if you have one
+            name: user.email,
             imageUrl: `https://placehold.co/60x60/${placeholderColor}/ffffff?text=${placeholderText}`
         };
-        console.log("updateAuthUI: localPlayerProfile creado:", localPlayerProfile);
-        fetchAndDisplayOpenGames(); // Fetch games when user is logged in
+        fetchAndDisplayOpenGames();
     } else {
-        console.log("updateAuthUI: No hay usuario.");
-        currentUser = null; // Ensure current user is null
-        localPlayerProfile = null; // Clear local profile
-
+        currentUser = null;
+        localPlayerProfile = null;
         authSection.classList.remove('hidden');
-        signinForm.classList.remove('hidden'); // Default to sign-in
+        signinForm.classList.remove('hidden');
         signupForm.classList.add('hidden');
         userStatusSection.classList.add('hidden');
         userEmailDisplay.textContent = '';
-
         networkSection.classList.add('hidden');
         gameSection.classList.add('hidden');
         createGameButton.disabled = true;
         joinGameWithIdButton.disabled = true;
         refreshGamesButton.disabled = true;
 
-
-        // If the user signs out while in a game, ensure they leave it properly
-        if (currentGameId && realtimeChannel) { // Check if they were in a game
-             console.log("updateAuthUI: User signed out, ensuring they leave any active game.");
-             leaveGame(); // This will also reset local game state and UI
+        if (currentGameId && realtimeChannel) {
+            leaveGame();
         } else {
-            resetLocalGameState(); // Ensure game state is clean even if not actively in a game channel
+            resetLocalGameState();
         }
     }
 }
