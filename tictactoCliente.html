@@ -564,7 +564,7 @@ console.log("fetchAndDisplayOpenGames: Estado de localPlayerProfile:", localPlay
                     .from(SUPABASE_TABLE_NAME)
                     .select('*')
                     .eq('id', gameIdToJoin)
-                    .single();
+                    .limit(1);
 
                 if (fetchError || !gameData) {
                     throw new Error(fetchError?.message || "Partida no encontrada o ya no está disponible.");
