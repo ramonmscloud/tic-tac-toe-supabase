@@ -29,7 +29,7 @@ async function fetchAndDisplayOpenGames() {
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
-            .not('players', 'cs', [{ id: localPlayerProfile.id }]) // Exclude games where the current user is already a player
+            .neq('players[0]->>id', localPlayerProfile.id) // Exclude games where the current user is already a player
             .order('created_at', { ascending: false });
 
 // Log para depuración
