@@ -38,7 +38,7 @@ console.log("Valor de localPlayerProfile.id:", localPlayerProfile.id); // Log pa
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
-            .neq('players[0]->>id', localPlayerProfile.id) // Creator is not the current user
+            .neq('players[0]->>id', JSON.stringify(localPlayerProfile.id)) // Creator is not the current user
             .order('created_at', { ascending: false });
 
         console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
