@@ -29,7 +29,7 @@ async function fetchAndDisplayOpenGames() {
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false)
             .is('players[1]', null)
-            .neq('players[0]->>id', JSON.stringify(localPlayerProfile.id))
+            .neq('players[0]->>id', localPlayerProfile.id)
             .order('created_at', { ascending: false });
 
         if (error) {
