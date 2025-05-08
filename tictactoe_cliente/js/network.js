@@ -32,6 +32,9 @@ async function fetchAndDisplayOpenGames() {
             .not('players', 'cs', [{ id: localPlayerProfile.id }]) // Exclude games where the current user is already a player
             .order('created_at', { ascending: false });
 
+// Log para depuración
+console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGames);
+console.log("fetchAndDisplayOpenGames: Error de Supabase:", error);
         console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
 
         if (error) {
