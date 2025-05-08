@@ -31,11 +31,11 @@ console.log("Depuración: Valor de localPlayerProfile.id:", localPlayerProfile.i
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
-            .neq('players[0]->>id', localPlayerProfile.id) // Exclude games where the current user is already a player
+            .neq('players[0]->>id', JSON.stringify(localPlayerProfile.id)) // Exclude games where the current user is already a player
             .order('created_at', { ascending: false });
 
 // Log para depuración
-console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGamesResult);
+console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGamesResult || null);
 console.log("fetchAndDisplayOpenGames: Error de Supabase:", queryError);
         console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
 
