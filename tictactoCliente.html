@@ -414,6 +414,10 @@
 
 
         // --- Funciones de Red (Crear/Unirse a Partida, Escuchar Cambios) ---
+// --- Logs adicionales para depuración ---
+console.log("fetchAndDisplayOpenGames: Iniciando función.");
+console.log("fetchAndDisplayOpenGames: Estado de supabase:", supabase);
+console.log("fetchAndDisplayOpenGames: Estado de localPlayerProfile:", localPlayerProfile);
         async function fetchAndDisplayOpenGames() {
             console.log("fetchAndDisplayOpenGames: Function called.");
             if (!supabase) {
@@ -438,10 +442,7 @@
             try {
                 const { data: openGames, error, status, count } = await supabase
                     .from(SUPABASE_TABLE_NAME)
-                    .select('id, players, created_at, is_game_over', { count: 'exact' }) // Added is_game_over for debugging, and count
-                    .is('players->1', null) 
-                    .eq('is_game_over', false) 
-                    .not('players->0->>id', 'eq', localPlayerProfile.id) 
+                    .select('id, players, created_at, is_game_over', { count: 'exact' }) // Simplified query for debugging
                     .order('created_at', { ascending: false });
 
                 console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames, error, status, count });
