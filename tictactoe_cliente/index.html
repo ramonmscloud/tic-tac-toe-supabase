@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - Multijugador con Autenticación (Supabase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-100 to-purple-100">
+
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">Tic Tac Toe - Multijugador</h1>
+
+    <div id="auth-section" class="w-full max-w-md p-6 bg-white rounded-lg shadow-md mb-6">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Acceder o Registrarse</h2>
+        <div id="auth-message-display" class="auth-message hidden"></div>
+        <form id="signin-form" class="space-y-4">
+            <div>
+                <label for="signin-email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="signin-email" name="signin-email" required autocomplete="email"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="signin-password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" id="signin-password" name="signin-password" required autocomplete="current-password"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <button type="submit"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Iniciar Sesión
+            </button>
+            <p class="text-center text-sm">
+                ¿No tienes cuenta? <a href="#" id="show-signup" class="font-medium text-indigo-600 hover:text-indigo-500">Regístrate</a>
+            </p>
+        </form>
+        <form id="signup-form" class="space-y-4 hidden">
+            <div>
+                <label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="signup-email" name="signup-email" required autocomplete="email"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="signup-password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" id="signup-password" name="signup-password" required autocomplete="new-password"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                       placeholder="Mínimo 6 caracteres">
+            </div>
+            <button type="submit"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Registrarse
+            </button>
+            <p class="text-center text-sm">
+                ¿Ya tienes cuenta? <a href="#" id="show-signin" class="font-medium text-indigo-600 hover:text-indigo-500">Inicia Sesión</a>
+            </p>
+        </form>
+        <div id="user-status-section" class="hidden mt-6 text-center">
+            <p class="text-sm text-gray-700">Conectado como: <strong id="user-email-display"></strong></p>
+            <button id="signout-button"
+                    class="mt-2 w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Cerrar Sesión
+            </button>
+        </div>
+    </div>
+
+    <div id="network-section" class="hidden w-full max-w-lg p-6 bg-white rounded-lg shadow-md mb-6">
+         <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Conéctate a una Partida</h2>
+         <div class="space-y-4">
+             <div>
+                 <button id="create-game-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200" disabled>
+                     Crear Nueva Partida
+                 </button>
+                 <p id="game-id-display" class="text-center text-sm text-gray-500 mt-2 break-all"></p>
+             </div>
+
+             <hr class="my-4">
+
+             <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2 text-center">Partidas Abiertas</h3>
+                <div id="open-games-list-container" class="mb-3">
+                    <div id="open-games-list" class="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
+                        <p id="no-open-games-message" class="text-center text-gray-500 py-4">Buscando partidas...</p>
+                        </div>
+                </div>
+                <button id="refresh-games-button" class="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md transition duration-200 flex items-center justify-center mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-2">
+                        <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.458-4.595V6.19a.75.75 0 1 0-1.5 0v1.503a7 7 0 0 0 12.283 5.858l1.148 1.147a.75.75 0 1 0 1.06-1.06l-1.147-1.148ZM4.688 8.576a5.5 5.5 0 0 1 9.458 4.595v.639a.75.75 0 1 0 1.5 0v-1.503a7 7 0 0 0-12.283-5.858l-1.148-1.147a.75.75 0 1 0-1.06 1.06l1.147 1.148Z" clip-rule="evenodd" />
+                    </svg>
+                    Actualizar Lista
+                </button>
+             </div>
+             <hr class="my-4">
+
+             <div>
+                 <label for="join-game-id" class="block text-sm font-medium text-gray-700 mb-1">O únete con un ID específico:</label>
+                 <div class="flex space-x-2">
+                     <input type="text" id="join-game-id" placeholder="Introduce ID de la partida" class="flex-grow border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400">
+                     <button id="join-game-id-button" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-md transition duration-200" disabled>
+                         Unirse con ID
+                     </button>
+                 </div>
+                 <p id="network-status" class="text-center text-sm text-gray-600 mt-2 h-auto min-h-[1.25rem]"></p> </div>
+         </div>
+    </div>
+
+    <div id="game-section" class="hidden w-full max-w-md flex flex-col items-center">
+        <div class="flex justify-around w-full mb-4 p-3 bg-white rounded-lg shadow">
+             <div id="player-info-0" class="flex flex-col items-center text-center">
+                 <img id="player-image-0" src="" alt="Jugador 1" class="player-image mb-1">
+                 <p class="text-sm font-semibold text-gray-700"><span id="player-name-0">Jugador 1</span> (X)</p>
+             </div>
+             <div class="flex items-center text-xl font-bold text-gray-500">VS</div>
+             <div id="player-info-1" class="flex flex-col items-center text-center">
+                 <img id="player-image-1" src="" alt="Jugador 2" class="player-image mb-1">
+                 <p class="text-sm font-semibold text-gray-700"><span id="player-name-1">Jugador 2</span> (O)</p>
+             </div>
+        </div>
+        <p id="turn-indicator" class="text-lg font-semibold text-gray-800 mb-3 hidden">Turno de: <span id="current-player-name" class="font-bold"></span></p>
+        <div id="board" class="grid grid-cols-3 gap-2 mb-4 bg-gray-200 p-2 rounded-lg shadow-inner">
+            <div data-index="0" class="cell"></div> <div data-index="1" class="cell"></div> <div data-index="2" class="cell"></div>
+            <div data-index="3" class="cell"></div> <div data-index="4" class="cell"></div> <div data-index="5" class="cell"></div>
+            <div data-index="6" class="cell"></div> <div data-index="7" class="cell"></div> <div data-index="8" class="cell"></div>
+        </div>
+        <div id="status-message-container" class="flex items-center justify-center text-xl font-semibold text-center text-gray-800 mb-4 h-8"> <span id="status-message"></span>
+        </div>
+        <div class="flex space-x-4">
+             <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition duration-200">
+                Abandonar Partida
+            </button>
+        </div>
+    </div>
+
+    <script src="js/globals.js"></script>
+    <script src="js/network.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
