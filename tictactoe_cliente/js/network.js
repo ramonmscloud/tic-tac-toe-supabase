@@ -27,12 +27,17 @@ async function fetchAndDisplayOpenGames() {
         const { data: openGames, error } = await supabase
             .from(SUPABASE_TABLE_NAME)
             .select('id, players, created_at, is_game_over')
+console.log("Valor de localPlayerProfile.id:", localPlayerProfile.id); // Log para verificar el valor de localPlayerProfile.id
+
+        const { data: openGamesResult, error: queryError } = await supabase
+            .from(SUPABASE_TABLE_NAME)
+            .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
             .neq('players[0]->>id', localPlayerProfile.id) // Creator is not the current user
             .order('created_at', { ascending: false });
 
-        console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames, error });
+        console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesResult, error: queryError });
 
         if (error) {
             console.error("fetchAndDisplayOpenGames: Error al obtener partidas:", error);
