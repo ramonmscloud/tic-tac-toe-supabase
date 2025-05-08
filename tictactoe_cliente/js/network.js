@@ -25,7 +25,9 @@ async function fetchAndDisplayOpenGames() {
         // Query for games that are not over, have only one player (players[1] is null),
         // and where the existing player (players[0]) is not the current user.
         const { data: openGames, error } = await supabase
-            .from(SUPABASE_TABLE_NAME)
+console.log("Depuración: Valor de localPlayerProfile.id:", localPlayerProfile.id); // Depuración: Verificar el valor de localPlayerProfile.id
+
+        const { data: openGamesResult, error: queryError } = await supabase
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
@@ -33,8 +35,8 @@ async function fetchAndDisplayOpenGames() {
             .order('created_at', { ascending: false });
 
 // Log para depuración
-console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGames);
-console.log("fetchAndDisplayOpenGames: Error de Supabase:", error);
+console.log("fetchAndDisplayOpenGames: Datos obtenidos de Supabase:", openGamesResult);
+console.log("fetchAndDisplayOpenGames: Error de Supabase:", queryError);
         console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
 
         if (error) {
