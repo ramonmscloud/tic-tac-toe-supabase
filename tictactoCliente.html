@@ -545,6 +545,7 @@ console.log("fetchAndDisplayOpenGames: Estado de localPlayerProfile:", localPlay
             }
         }
 
+
         async function joinGame(gameIdFromList = null) {
             console.log("joinGame: Function called.");
             if (!localPlayerProfile || !supabase) {
@@ -693,6 +694,7 @@ console.log("fetchAndDisplayOpenGames: Estado de localPlayerProfile:", localPlay
                     .then(status => console.log("listenToGameUpdates: Canal Realtime anterior removido, estado:", status))
                     .catch(error => console.error("listenToGameUpdates: Error al remover canal Realtime previo:", error));
                 realtimeChannel = null; 
+                
             }
 
             realtimeChannel = supabase
