@@ -26,19 +26,10 @@ async function fetchAndDisplayOpenGames() {
         // and where the existing player (players[0]) is not the current user.
         const { data: openGames, error } = await supabase
             .from(SUPABASE_TABLE_NAME)
-console.log("Tipo de localPlayerProfile.id:", typeof localPlayerProfile.id); // Validar si localPlayerProfile.id es una cadena JSON válida
-
-        const { data: openGamesResult, error: queryError } = await supabase
-            .from(SUPABASE_TABLE_NAME)
-            .select('id, players, created_at, is_game_over')
-console.log("Valor de localPlayerProfile.id:", localPlayerProfile.id); // Log para verificar el valor de localPlayerProfile.id
-
-        const { data: openGamesData, error: supabaseError } = await supabase
-            .from(SUPABASE_TABLE_NAME)
             .select('id, players, created_at, is_game_over')
             .eq('is_game_over', false) // Game is not over
             .is('players[1]', null)    // Second player slot is empty (Supabase filters for array element null)
-            .or(`players[0]->>id.neq.${localPlayerProfile.id},players[1]->>id.is.null`) // Exclude games where the current user is already a player
+            .neq('players[0]->>id', localPlayerProfile.id) // Exclude games where the current user is already a player
             .order('created_at', { ascending: false });
 
         console.log("fetchAndDisplayOpenGames: Supabase query result:", { openGames: openGamesData, error: supabaseError });
